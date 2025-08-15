@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>yt-dl</title>
+    <title>YouTube Video Downloader</title>
     <link
         href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.1/dist/darkly/bootstrap.min.css"
         rel="stylesheet">
@@ -10,30 +10,37 @@
 </head>
 <body class="p-4">
 
-<h1>yt-dl</h1>
+<h1>YouTube Video Downloader</h1>
+
+<a href="{{ url_for('choose_download_folder_page') }}" class="btn btn-primary mb-4">
+    Choose Download Folder
+</a>
+<p><strong>{{ download_folder }} </strong> is used</p>
+
 <form action="{{ url_for('video_settings', download_folder=download_folder) }}" method="POST" class="mb-4">
     <input type="text" name="video_url" class="form-control mb-2"
            placeholder="Insert YouTube Link" autocomplete="off">
-    <p>Video Quality settings</p>
+    <p>Video Quality Settings</p>
     <select name="video_quality" class="form-select">
         {% for quality in video_quality %}
         <option value="{{ quality }}">{{ quality }}</option>
         {% endfor %}
     </select>
+    <p>Custom Video Resolution</p>
         <select name="video_resolution" class="form-select">
 {% for resolution in video_resolution %}
         <option value="{{ resolution }}">{{ resolution }}</option>
         {% endfor %}
         </select>
                 <input type="checkbox" name="custom_resolution" value="yes"> <p>Use custom resolution</p>
-
+    <p>Video Container</p>
+<select name="video_container" class="form-select">
+{% for container in video_container %}
+        <option value="{{ container }}">{{ container }}</option>
+        {% endfor %}
+        </select>
     <input type="submit" class="btn btn-info w-100" value="Start Download">
 </form>
-
-<a href="{{ url_for('choose_download_folder_page') }}" class="btn btn-primary mb-4">
-    Choose Download Folder
-</a>
-<p><strong>{{ download_folder }} </strong> already in use</p>
 
 <!-- Fortschrittsanzeige -->
 <div class="progress" style="height: 30px;">
