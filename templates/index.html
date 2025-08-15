@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>yt-dl</title>
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.1/dist/darkly/bootstrap.min.css"
+        rel="stylesheet">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body class="p-4">
+
+<h1>yt-dl</h1>
+<form action="{{ url_for('video_settings', download_folder=download_folder) }}" method="POST" class="mb-4">
+    <input type="text" name="video_url" class="form-control mb-2"
+           placeholder="Insert YouTube Link" autocomplete="off">
+    <p>Video Quality settings</p>
+    <select name="video_quality" class="form-select">
+        {% for quality in video_quality %}
+        <option value="{{ quality }}">{{ quality }}</option>
+        {% endfor %}
+    </select>
+        <select name="video_resolution" class="form-select">
+{% for resolution in video_resolution %}
+        <option value="{{ resolution }}">{{ resolution }}</option>
+        {% endfor %}
+        </select>
+                <input type="checkbox" name="custom_resolution" value="yes"> <p>Use custom resolution</p>
+
+    <input type="submit" class="btn btn-info w-100" value="Start Download">
+</form>
+
+<a href="{{ url_for('choose_download_folder_page') }}" class="btn btn-primary mb-4">
+    Choose Download Folder
+</a>
+<p><strong>{{ download_folder }} </strong> already in use</p>
+
+<!-- Fortschrittsanzeige -->
+<div class="progress" style="height: 30px;">
+    <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated"
+         role="progressbar" style="width: 0%;">0%
+    </div>
+</div>
+<p id="progress-text" class="mt-2">Nothing Downloaded...</p>
+
+<script>
+    var socket = io();
+
+socket.on('progress', function (data) {
+    // Wenn eine Nachricht vorhanden ist, zeige diese und beende
+    if (data.message) {
+        document.getElementById('progress-text').textContent = data.message;
+        if (data.percent === '100%') {
+            document.getElementById('progress-bar').classList.remove('progress-bar-animated');
+            document.getElementById('progress-bar').classList.add('bg-success');
+        }
+        return; // nicht überschreiben
+    }
+
+    // Wenn kein message-Feld vorhanden ist → normalen Fortschritt anzeigen
+    let percent = parseFloat(data.percent);
+    document.getElementById('progress-bar').style.width = percent + "%";
+    document.getElementById('progress-bar').textContent = data.percent;
+    document.getElementById('progress-text').textContent =
+        `Progress: ${data.percent} | Speed: ${data.speed} | ETA: ${data.eta}`;
+});
+</script>
+</body>
+</html>
