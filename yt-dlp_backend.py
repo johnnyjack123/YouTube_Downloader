@@ -68,8 +68,6 @@ def home():
 @app.route('/video_settings', methods=["GET", "POST"])
 def video_settings():
     custom_resolution = request.form.get("custom_resolution")
-    if custom_resolution:
-        print("Checkbox: " + custom_resolution)
     if custom_resolution == "yes":
         video_resolution = request.form.get("video_resolution")
         if not video_resolution:
@@ -106,17 +104,15 @@ def download(video_url, video_data, video_container):
     global download_thread, abort_flag
     abort_flag = False
     if video_url:
-        print(f"Video-URL: {video_url}")
         # Hier senden wir eine reine Statusnachricht ohne Fortschrittsdaten
         socketio.emit('progress', {
-            'message': '⏳ Download wird vorbereitet...'
+            'message': '⏳ Download processing...'
         })
 
         download_folder = read("download_folder")
         if not os.path.exists(download_folder):
             return "Not valid folder"
 
-        print("choosed folder: " + download_folder)
         # Den Pfad für den Download setzen
         ydl_opts = {
             'format': video_data,  # schlechteste Qualität, um Beispiel zu zeigen
@@ -129,7 +125,7 @@ def download(video_url, video_data, video_container):
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([video_url])
         except yt_dlp.utils.DownloadError as e:
-            print("Download abgebrochen:", e)
+            print("Download aborted:", e)
         download_thread = False
 
 @app.route('/abort', methods=["GET", "POST"])
@@ -145,7 +141,11 @@ def choose_download_folder_page():
     if not path:
         path = os.path.expanduser("~")
     folders, new_path = search_download_folder(folder, path)
-    return render_template('explorer.html', folders=folders, path=new_path)
+    if path == os.path.expanduser("~"):
+        back_button = False
+    else:
+        back_button = True
+    return render_template('explorer.html', folders=folders, path=new_path, back_button=back_button)
 
 @app.route('/choose_download_folder', methods=["POST", "GET"])
 def choose_download_folder():
@@ -165,8 +165,6 @@ def search_download_folder(folder, path):
         f for f in os.listdir(path)
         if os.path.isdir(os.path.join(path, f)) and not f.startswith(".")  # versteckte Unix-Ordner
     ]
-    print(folders)
-    print(path)
     return folders, path
 
 @app.route('/change_download_folder', methods=["GET", "POST"])
@@ -183,10 +181,7 @@ def change_download_folder():
 def previous_folder():
     path = request.args.get("path")
     new_path = path.rsplit("\\", 1)[0]
-    print(new_path)
-    new_path, folder = new_path.rsplit("\\", 1)
-    print(new_path + folder)
-    return redirect(url_for("choose_download_folder_page", path=new_path, folder=folder))
+    return redirect(url_for("choose_download_folder_page", path=new_path))
 
 def progress_hook(d):
     global abort_flag

@@ -16,7 +16,9 @@
     <!-- Globale Navigation wie Explorer -->
     <div class="explorer-nav d-flex align-items-center mb-4">
         <a href="{{ url_for('home') }}" class="btn btn-gradient me-2">⬅ Back to Downloads</a>
+        {% if back_button %}
         <a href="{{ url_for('previous_folder', path=path) }}" class="btn btn-gradient me-2">⬅ Back</a>
+        {% endif %}
     </div>
 
     <h1 class="app-title">Choose Folder</h1>
