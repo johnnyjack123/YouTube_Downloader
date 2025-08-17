@@ -4,6 +4,7 @@ from flask_socketio import SocketIO
 import threading
 import os
 import json
+import webbrowser
 
 download_thread = False
 abort_flag = False
@@ -17,7 +18,6 @@ app = Flask(
 )
 
 socketio = SocketIO(app)  # SocketIO aktivieren
-
 
 @app.route('/', methods=["GET", "POST"])
 def home():
@@ -262,7 +262,14 @@ def convert_text_to_command(description):
     cmd = video_quality_cmd[index]
     return cmd
 
-if __name__ == '__main__':
-    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
+def open_browser():
+    url = "http://127.0.0.1:5000"
+    webbrowser.open(url)
+    return
 
+if __name__ == '__main__':
+    if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        threading.Timer(1, open_browser).start()
+
+    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
 
