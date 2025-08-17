@@ -1,7 +1,7 @@
 ### YouTube Downloader
 #### Introduction
 
-YouTube Downloader is a tool based on [yt-dlp](https://github.com/yt-dlp/yt-dlp?tab=readme-ov-file#general-options) that allows you to easily download YouTube videos to your computer.
+YouTube Downloader is a tool based on [yt-dlp](https://github.com/yt-dlp/yt-dlp?tab=readme-ov-file) that allows you to easily download YouTube videos to your computer.
 
 #### Installation
 
