@@ -21,7 +21,20 @@ socketio = SocketIO(app)  # SocketIO aktivieren
 
 @app.route('/', methods=["GET", "POST"])
 def home():
-    # TODO: json Datei wird angelegt, wenn noch nicht vorhanden
+    deafult_download_folder = os.path.join(os.path.expanduser("~"), "Videos")
+    deafult_content = {
+    "download_folder": deafult_download_folder,
+    "video_quality": "best",
+    "video_resolution": "1080",
+    "video_resolution_command": "bv[height<=1080]+ba/best[height<=1080]",
+    "video_container": "mp4",
+    "checkbox": False
+    }
+
+    if not os.path.exists("userdata.json"):
+        with open("userdata.json", "w", encoding="utf-8") as f:
+            json.dump(deafult_content, f, indent=4, ensure_ascii=False)
+
     video_quality = ["best", "worst", "bestvideo", "bestaudio", "worstvideo", "worstaudio", "bestvideo+bestaudio/best"]
     video_resolution = ["720", "1080", "1920", "1440"]
     video_container = ["mp4", "mov", "mkv", "webm", "avi"]
