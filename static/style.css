@@ -1,0 +1,115 @@
+/* Globales Layout */
+body {
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    min-height: 100vh;
+    color: #f1f1f1;
+}
+
+/* Titel */
+.app-title {
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    letter-spacing: 1px;
+    background: linear-gradient(90deg, #ff4b1f, #1fddff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Karten-Style für Form */
+.form-card {
+    background: rgba(25, 25, 25, 0.85);
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+}
+
+/* Gradient Button */
+.btn-gradient {
+    display: inline-block;
+    background: linear-gradient(90deg, #1fddff, #ff4b1f);
+    border: none;
+    color: #fff;
+    font-weight: 600;
+    padding: 0.7rem 1.5rem;
+    border-radius: 0.8rem;
+    transition: all 0.3s ease;
+}
+
+.btn-gradient:hover {
+    opacity: 0.9;
+    transform: scale(1.03);
+}
+
+/* Download Button */
+.btn-download {
+    font-size: 1.2rem;
+    font-weight: bold;
+    padding: 0.8rem;
+    border-radius: 0.8rem;
+}
+
+/* Progress Bar */
+.custom-progress {
+    height: 35px;
+    border-radius: 0.8rem;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+/* Explorer Navigation (oben wie bei Windows Explorer) */
+.explorer-nav {
+    background: rgba(25, 25, 25, 0.8);
+    padding: 0.8rem 1.2rem;
+    border-radius: 0.8rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+/* Aktueller Pfad-Balken */
+.path-bar {
+    background: rgba(50, 50, 50, 0.9);
+    padding: 0.8rem 1rem;
+    border-radius: 0.6rem;
+    margin-bottom: 2rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    word-break: break-all;
+}
+
+/* Folder-Grid */
+.folder-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.folder-card {
+    min-width: 120px;
+    background: rgba(40, 40, 40, 0.9);
+    border-radius: 0.8rem;
+    transition: transform 0.15s, box-shadow 0.15s;
+    cursor: pointer;
+    color: #f1f1f1;
+}
+
+.folder-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.6);
+}
+
+.folder-icon {
+    font-size: 2.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.folder-name {
+    font-size: 1rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

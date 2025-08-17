@@ -6,71 +6,86 @@
     <link
         href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.1/dist/darkly/bootstrap.min.css"
         rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 </head>
 <body class="p-4">
 
-<h1>YouTube Video Downloader</h1>
+<div class="container">
+    <h1 class="app-title">YouTube Video Downloader</h1>
 
-<a href="{{ url_for('choose_download_folder_page') }}" class="btn btn-primary mb-4">
-    Choose Download Folder
-</a>
-<p><strong>{{ download_folder }} </strong> is used</p>
+    <a href="{{ url_for('choose_download_folder_page') }}" class="btn btn-gradient mb-4">
+        Choose Download Folder
+    </a>
+    <p><strong>{{ download_folder }} </strong> is used</p>
 
-<form action="{{ url_for('video_settings', download_folder=download_folder) }}" method="POST" class="mb-4">
-    <input type="text" name="video_url" class="form-control mb-2"
-           placeholder="Insert YouTube Link" autocomplete="off">
-    <p>Video Quality Settings</p>
-    <select name="video_quality" class="form-select">
-        {% for quality in video_quality %}
-        <option value="{{ quality }}">{{ quality }}</option>
-        {% endfor %}
-    </select>
-    <p>Custom Video Resolution</p>
-        <select name="video_resolution" class="form-select">
-{% for resolution in video_resolution %}
-        <option value="{{ resolution }}">{{ resolution }}</option>
-        {% endfor %}
+    <form action="{{ url_for('video_settings', download_folder=download_folder) }}" method="POST" class="mb-4 form-card">
+        <label class="form-label"><strong>YouTube Link</strong></label>
+
+        <input type="text" name="video_url" class="form-control mb-3"
+               placeholder="Insert YouTube Link" autocomplete="off">
+
+        <label class="form-label"><strong>Video Quality Settings</strong></label>
+        <select name="video_quality" class="form-select mb-3">
+            {% for quality in video_quality %}
+            <option value="{{ quality }}">{{ quality }}</option>
+            {% endfor %}
         </select>
-                <input type="checkbox" name="custom_resolution" value="yes"> <p>Use custom resolution</p>
-    <p>Video Container</p>
-<select name="video_container" class="form-select">
-{% for container in video_container %}
-        <option value="{{ container }}">{{ container }}</option>
-        {% endfor %}
-        </select>
-    <input type="submit" class="btn btn-info w-100" value="Start Download">
-</form>
 
-<!-- Fortschrittsanzeige -->
-<div class="progress" style="height: 30px;">
-    <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated"
-         role="progressbar" style="width: 0%;">0%
+        <label class="form-label"><strong>Custom Video Resolution</strong></label>
+        <select name="video_resolution" class="form-select mb-2">
+            {% for resolution in video_resolution %}
+            <option value="{{ resolution }}">{{ resolution }}</option>
+            {% endfor %}
+        </select>
+        <div class="form-check mb-3">
+            {% if checkbox %}
+                        <input type="checkbox" name="custom_resolution" value="yes" class="form-check-input" id="customRes" checked>
+            {% else %}
+
+            <input type="checkbox" name="custom_resolution" value="yes" class="form-check-input" id="customRes">
+            {% endif %}
+            <label for="customRes" class="form-check-label">Use custom resolution</label>
+        </div>
+
+        <label class="form-label"><strong>Video Container</strong></label>
+        <select name="video_container" class="form-select mb-4">
+            {% for container in video_container %}
+            <option value="{{ container }}">{{ container }}</option>
+            {% endfor %}
+        </select>
+
+        <input type="submit" class="btn btn-info w-100 btn-download" value="Start Download">
+    </form>
+
+    <!-- Fortschrittsanzeige -->
+    <div class="progress custom-progress">
+        <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated"
+             role="progressbar" style="width: 0%;">0%
+        </div>
     </div>
+    <p id="progress-text" class="mt-3">Nothing Downloaded...</p>
 </div>
-<p id="progress-text" class="mt-2">Nothing Downloaded...</p>
 
 <script>
     var socket = io();
 
-socket.on('progress', function (data) {
-    // Wenn eine Nachricht vorhanden ist, zeige diese und beende
-    if (data.message) {
-        document.getElementById('progress-text').textContent = data.message;
-        if (data.percent === '100%') {
-            document.getElementById('progress-bar').classList.remove('progress-bar-animated');
-            document.getElementById('progress-bar').classList.add('bg-success');
+    socket.on('progress', function (data) {
+        if (data.message) {
+            document.getElementById('progress-text').textContent = data.message;
+            if (data.percent === '100%') {
+                document.getElementById('progress-bar').classList.remove('progress-bar-animated');
+                document.getElementById('progress-bar').classList.add('bg-success');
+            }
+            return;
         }
-        return; // nicht überschreiben
-    }
 
-    // Wenn kein message-Feld vorhanden ist → normalen Fortschritt anzeigen
-    let percent = parseFloat(data.percent);
-    document.getElementById('progress-bar').style.width = percent + "%";
-    document.getElementById('progress-bar').textContent = data.percent;
-    document.getElementById('progress-text').textContent =
-        `Progress: ${data.percent} | Speed: ${data.speed} | ETA: ${data.eta}`;
-});
+        let percent = parseFloat(data.percent);
+        document.getElementById('progress-bar').style.width = percent + "%";
+        document.getElementById('progress-bar').textContent = data.percent;
+        document.getElementById('progress-text').textContent =
+            `Progress: ${data.percent} | Speed: ${data.speed} | ETA: ${data.eta}`;
+    });
 </script>
 </body>
 </html>

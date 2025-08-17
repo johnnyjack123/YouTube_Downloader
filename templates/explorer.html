@@ -3,64 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <title>Ordner auswählen</title>
-    <!-- Bootstrap CSS einbinden -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            padding: 2rem;
-            background-color: #f8f9fa;
-        }
-        #currentPath {
-            margin-bottom: 1rem;
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
-        .folder-card {
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-        .folder-card:hover {
-            transform: scale(1.05);
-        }
-        .folder-icon {
-            font-size: 2rem;
-            margin-right: 0.5rem;
-        }
-        #folderList {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            list-style-type: none;
-            padding: 0;
-        }
-    </style>
+    <!-- Bootstrap + dein globales Style.css -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.1/dist/darkly/bootstrap.min.css"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
-    <div class="container">
-                        <a href="{{ url_for('home') }}" class="btn btn-primary">Back to Downloads</a>
-        <a href="{{ url_for('previous_folder', path=path) }}" class="btn btn-primary">Back to previous Folder</a>
+<body class="p-4">
 
-        <h1 class="mb-4">Choose Folder</h1>
+<div class="container">
 
-        <div id="currentPath" class="alert alert-secondary">{{ path }}</div>
-
-        <ul id="folderList">
-            {% for folder in folders %}
-            <li>
-                <a href="{{ url_for('choose_download_folder', folder=folder, path=path) }}" class="text-decoration-none">
-                    <div class="card folder-card p-3 text-center">
-                        <div class="folder-icon">📁</div>
-                        <div class="folder-name">{{ folder }}</div>
-                    </div>
-                </a>
-            </li>
-            {% endfor %}
-        </ul>
+    <!-- Globale Navigation wie Explorer -->
+    <div class="explorer-nav d-flex align-items-center mb-4">
+        <a href="{{ url_for('home') }}" class="btn btn-gradient me-2">⬅ Back to Downloads</a>
+        <a href="{{ url_for('previous_folder', path=path) }}" class="btn btn-gradient me-2">⬅ Back</a>
     </div>
 
-                        <a href="{{ url_for('change_download_folder', folder=folder, path=path, selection='select') }}" class="btn btn-primary">Choose this folder</a>
+    <h1 class="app-title">Choose Folder</h1>
 
-    <!-- Bootstrap JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Aktueller Pfad -->
+    <div id="currentPath" class="path-bar">{{ path }}</div>
+
+    <!-- Ordnerliste -->
+    <ul id="folderList" class="folder-list">
+        {% for folder in folders %}
+        <li>
+            <a href="{{ url_for('choose_download_folder', folder=folder, path=path) }}" class="text-decoration-none">
+                <div class="card folder-card p-3 text-center">
+                    <div class="folder-icon">📁</div>
+                    <div class="folder-name">{{ folder }}</div>
+                </div>
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <!-- Ordner-Auswahl -->
+    <div class="text-center mt-4">
+        <a href="{{ url_for('change_download_folder', folder=folder, path=path, selection='select') }}"
+           class="btn btn-gradient me-2">Choose this folder</a>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

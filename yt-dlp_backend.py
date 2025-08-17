@@ -5,13 +5,15 @@ import threading
 import os
 import json
 
-download_thread =False
+download_thread = False
+abort_flag = False
+
 state = True
 
 app = Flask(
     __name__,
-    template_folder="./templates",
-    #static_folder=get_static() + "/public",
+    template_folder = "./templates",
+    static_folder = "./static",
 )
 
 socketio = SocketIO(app)  # SocketIO aktivieren
@@ -41,11 +43,14 @@ def home():
     deafult_video_container = data["video_container"]
     video_container.remove(deafult_video_container)
     video_container.insert(0, deafult_video_container)
+
+    checkbox = read("checkbox")
     return render_template('index.html',
                            download_folder=download_folder,
                            video_quality=video_quality,
                            video_resolution=video_resolution,
-                           video_container=video_container)
+                           video_container=video_container,
+                           checkbox=checkbox)
 
 @app.route('/video_settings', methods=["GET", "POST"])
 def video_settings():
@@ -59,11 +64,13 @@ def video_settings():
         video_resolution_command = 'bv[height<=' + video_resolution + ']+ba/best[height<=' + video_resolution + ']'
         save("video_resolution", video_resolution)
         save("video_resolution_command", video_resolution_command)
+        save("checkbox", True)
         video_data = video_resolution_command
     else:
         video_quality = request.form.get("video_quality")
         video_quality = convert_text_to_command(video_quality)
         save("video_quality", video_quality)
+        save("checkbox", False)
         video_data = video_quality
     video_container = request.form.get("video_container")
     save("video_container", video_container)
@@ -83,15 +90,15 @@ def start_download(video_url, video_data, video_container):
     return
 
 def download(video_url, video_data, video_container):
-    global download_thread
+    global download_thread, abort_flag
+    abort_flag = False
     if video_url:
         print(f"Video-URL: {video_url}")
+        # Hier senden wir eine reine Statusnachricht ohne Fortschrittsdaten
         socketio.emit('progress', {
-            'percent': '0%',
-            'speed': '0',
-            'eta': 'N/A',
             'message': '⏳ Download wird vorbereitet...'
         })
+
         download_folder = read("download_folder")
         if not os.path.exists(download_folder):
             return "Not valid folder"
@@ -105,10 +112,18 @@ def download(video_url, video_data, video_container):
             'progress_hooks': [progress_hook],
         }
         print(ydl_opts)
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([video_url])
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([video_url])
+        except yt_dlp.utils.DownloadError as e:
+            print("Download abgebrochen:", e)
         download_thread = False
 
+@app.route('/abort', methods=["GET", "POST"])
+def abort():
+    global abort_flag
+    abort_flag = True
+    return redirect(url_for("home"))
 
 @app.route('/choose_download_folder_page', methods=["GET", "POST"])
 def choose_download_folder_page():
@@ -161,6 +176,11 @@ def previous_folder():
     return redirect(url_for("choose_download_folder_page", path=new_path, folder=folder))
 
 def progress_hook(d):
+    global abort_flag
+
+    if abort_flag:
+        raise yt_dlp.utils.DownloadError("Download abgebrochen!")
+
     if d['status'] == 'downloading':
         percent = d.get('_percent_str', '0.0%').strip()
         speed = d.get('_speed_str', 'N/A')
@@ -208,7 +228,7 @@ def convert_command_to_text(cmd):
                      "Best video (video only)",
                      "Best audio (audio only)",
                      "Worst video (video only)",
-                     "Worst audio (audio only",
+                     "Worst audio (audio only)",
                      "Best video and best audio (seperated downloads, merged after download, provides in some cases better quality)"]
     index = video_quality_cmd.index(cmd)
     description = video_quality[index]
@@ -223,6 +243,7 @@ def convert_text_to_command(description):
                      "Best video (video only)",
                      "Best audio (audio only)",
                      "Worst video (video only)",
+                     "Worst audio (audio only)",
                      "Best video and best audio (seperated downloads, merged after download, provides in some cases better quality)"]
     index = video_quality.index(description)
     cmd = video_quality_cmd[index]
