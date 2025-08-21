@@ -90,10 +90,8 @@ def video_settings():
     start_download(video_url, video_data, video_container)
     return redirect(url_for("home"))
 
-#@app.route('/download', methods=["GET", "POST"])
 def start_download(video_url, video_data, video_container):
     global download_thread
-    #video_url = request.form.get("yt-link")
     if not download_thread:
         download_thread = True
         thread = threading.Thread(target=download, daemon=True, args=(video_url, video_data, video_container,))

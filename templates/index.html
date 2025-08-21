@@ -65,17 +65,31 @@
         </div>
     </div>
     <p id="progress-text" class="mt-3">Nothing Downloaded...</p>
+    <a id="cancel-download" href="{{ url_for('abort') }}"
+   class="btn btn-gradient mb-4" style="display: none;">
+   Cancel Download
+</a>
+
 </div>
 
 <script>
     var socket = io();
+    var cancelLink = document.getElementById('cancel-download');
 
     socket.on('progress', function (data) {
+        // Link anzeigen, sobald Download startet
+        if (cancelLink.style.display === 'none') {
+            cancelLink.style.display = 'inline-block';
+        }
+
         if (data.message) {
             document.getElementById('progress-text').textContent = data.message;
             if (data.percent === '100%') {
                 document.getElementById('progress-bar').classList.remove('progress-bar-animated');
                 document.getElementById('progress-bar').classList.add('bg-success');
+
+                // Link wieder ausblenden
+                cancelLink.style.display = 'none';
             }
             return;
         }
