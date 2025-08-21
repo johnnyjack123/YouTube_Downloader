@@ -1,3 +1,5 @@
+import eventlet
+eventlet.monkey_patch()
 import yt_dlp
 from flask import Flask, request, render_template, redirect, url_for, jsonify
 from flask_socketio import SocketIO
@@ -17,7 +19,7 @@ app = Flask(
     static_folder = "./static",
 )
 
-socketio = SocketIO(app)  # SocketIO aktivieren
+socketio = SocketIO(app, async_mode="eventlet", cors_allowed_origins="*")
 
 @app.route('/', methods=["GET", "POST"])
 def home():
@@ -94,9 +96,8 @@ def start_download(video_url, video_data, video_container):
     global download_thread
     if not download_thread:
         download_thread = True
-        thread = threading.Thread(target=download, daemon=True, args=(video_url, video_data, video_container,))
-        thread.start()
-    return
+        socketio.start_background_task(download, video_url, video_data, video_container)
+
 
 def download(video_url, video_data, video_container):
     global download_thread, abort_flag
@@ -117,6 +118,7 @@ def download(video_url, video_data, video_container):
             'outtmpl': os.path.join(download_folder, '%(title)s.%(ext)s'),
             'merge_output_format': video_container,
             'progress_hooks': [progress_hook],
+            'no_color': True, # Suppresses coloured output, as otherwise the numbers cannot be displayed correctly in the browser
         }
         print(ydl_opts)
         try:
@@ -198,7 +200,7 @@ def progress_hook(d):
             'speed': speed,
             'eta': eta
         })
-
+        socketio.sleep(0)
     elif d['status'] == 'finished':
         socketio.emit('progress', {
             'percent': '100%',
@@ -206,6 +208,7 @@ def progress_hook(d):
             'eta': '0',
             'message': '✅ Download abgeschlossen!'})
         print("Download abgeschlossen, wird nun verarbeitet...")
+        socketio.sleep(0)
 
 def save(entry, video_data):
     with open("userdata.json", "r", encoding="utf-8") as file:
@@ -261,8 +264,6 @@ def open_browser():
     return
 
 if __name__ == '__main__':
-    if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
-        threading.Timer(1, open_browser).start()
+    socketio.run(app, host="0.0.0.0", port=5000, debug=True)
 
-    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
 
