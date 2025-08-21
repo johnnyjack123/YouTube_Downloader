@@ -6,12 +6,11 @@ YouTube Downloader is a tool based on [yt-dlp](https://github.com/yt-dlp/yt-dlp?
 #### Installation
 
 1. Clone this Git repository.
-
-2. Make sure Python is installed on your PC.
-
-3. Run the yt-dlp_backend.py file.
-
-4. A browser window will open.
+2. Make sure [Python](https://www.python.org/downloads/) is installed on your PC.
+3. Move in the command line to the folder where the `yt-dlp_backend.py` file is located.
+4. Run the command `pip install -r requirements.txt` to install the necessary librarys.
+5. Run the command `python yt-dlp_backend` to launch the program.
+6. If everything works correctly a browser window will open.
 
 #### Using YouTube Downloader
 
@@ -19,7 +18,7 @@ YouTube Downloader is a tool based on [yt-dlp](https://github.com/yt-dlp/yt-dlp?
 
 2. Select a folder where the video will be saved after download. Use the integrated explorer for this, which you can access via the corresponding button.
 
-3. Choose the download quality. Best means that the best available stream where audio and video are already merged will be downloaded. This is most likely not the best video quality available. In this case, you have to choose Best video and best audio (separated downloads, merged after download, sometimes providing better quality) or select a custom resolution. If you check the checkbox for a custom resolution, you can choose your preferred resolution.
+3. Choose the download quality. `Best` means that the best available stream where audio and video are already merged will be downloaded. This is most likely not the best video quality available. If you wanna download the video in the best possible quality, choose `Best video and best audio (separated downloads, merged after download, sometimes providing better quality)` or select a custom resolution. If you check the checkbox for a custom resolution, you can choose your preferred resolution.
 
 4. You can choose an output video container. If you download in low resolutions, you will probably not get the selected video container. This happens because a pre-merged video and audio stream is used, which is downloaded as-is. For higher resolutions, there are no pre-merged streams, so YouTube-dlp running in the background will merge audio and video together. In this case, it will also convert the video container to the one you chose.
 
