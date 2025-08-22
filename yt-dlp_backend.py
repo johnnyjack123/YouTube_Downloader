@@ -7,11 +7,31 @@ import threading
 import os
 import json
 import webbrowser
+import logging
 
 download_thread = False
 abort_flag = False
 
+is_downloading = False
+video_data = []
+
 state = True
+
+video_quality_cmd = ["worstvideo+worstaudio/worst",
+                     "bestvideo+bestaudio/best",
+                     "best",
+                     "bestvideo",
+                     "bestaudio",
+                     "worstvideo",
+                     "worstaudio"]
+
+video_quality = ["Worst video and worst audio",
+                 "Best video and best audio",
+                 "Good quality",
+                 "Best video (video only)",
+                 "Best audio (audio only)",
+                 "Worst video (video only)",
+                 "Worst audio (audio only)"]
 
 app = Flask(
     __name__,
@@ -23,10 +43,11 @@ socketio = SocketIO(app, async_mode="eventlet", cors_allowed_origins="*")
 
 @app.route('/', methods=["GET", "POST"])
 def home():
+    global video_quality_cmd
     deafult_download_folder = os.path.join(os.path.expanduser("~"), "Videos")
     deafult_content = {
     "download_folder": deafult_download_folder,
-    "video_quality": "best",
+    "video_quality": "bestvideo+bestaudio/best",
     "video_resolution": "1080",
     "video_resolution_command": "bv[height<=1080]+ba/best[height<=1080]",
     "video_container": "mp4",
@@ -37,7 +58,6 @@ def home():
         with open("userdata.json", "w", encoding="utf-8") as f:
             json.dump(deafult_content, f, indent=4, ensure_ascii=False)
 
-    video_quality = ["best", "worst", "bestvideo", "bestaudio", "worstvideo", "worstaudio", "bestvideo+bestaudio/best"]
     video_resolution = ["720", "1080", "1920", "1440"]
     video_container = ["mp4", "mov", "mkv", "webm", "avi"]
 
@@ -45,9 +65,9 @@ def home():
     download_folder = data["download_folder"]
 
     deafult_video_quality = data["video_quality"]
-    video_quality.remove(deafult_video_quality)
-    video_quality.insert(0, deafult_video_quality)
-    for x, cmd in enumerate(video_quality):
+    video_quality_cmd.remove(deafult_video_quality)
+    video_quality_cmd.insert(0, deafult_video_quality)
+    for x, cmd in enumerate(video_quality_cmd):
         description = convert_command_to_text(cmd)
         video_quality[x] = description
 
@@ -69,6 +89,7 @@ def home():
 
 @app.route('/video_settings', methods=["GET", "POST"])
 def video_settings():
+    global video_data, is_downloading
     custom_resolution = request.form.get("custom_resolution")
     if custom_resolution == "yes":
         video_resolution = request.form.get("video_resolution")
@@ -78,55 +99,102 @@ def video_settings():
         save("video_resolution", video_resolution)
         save("video_resolution_command", video_resolution_command)
         save("checkbox", True)
-        video_data = video_resolution_command
+        video_resolution = video_resolution_command
     else:
         video_quality = request.form.get("video_quality")
         video_quality = convert_text_to_command(video_quality)
         save("video_quality", video_quality)
         save("checkbox", False)
-        video_data = video_quality
+        video_resolution = video_quality
     video_container = request.form.get("video_container")
     save("video_container", video_container)
     video_url = request.form.get("video_url")
-    print("URL: " + video_url)
-    start_download(video_url, video_data, video_container)
+
+    # TODO: In Thread auslagern
+    #with yt_dlp.YoutubeDL({}) as ydl:
+    #    video_metadata = ydl.extract_info(video_url, download=False)
+    #    print("Titel:", video_metadata['title'])
+
+    entry = {
+        "video_url": video_url,
+        "video_resolution": video_resolution,
+        "video_container": video_container,
+        "video_name": "Test" #video_metadata["title"]
+    }
+
+    video_data.append(entry)
+
+    socketio.emit('video_list', {
+        "queue": video_data,
+        "current": None  # hier gerade kein Wechsel, aktuelles Video bleibt unverändert
+    })
+    #print("Queue: " + str(video_data))
+    #print("URL: " + video_url)
+    logging.basicConfig(filename="debug.log", level=logging.DEBUG)
+    logging.debug(video_data)
+    if not is_downloading:
+        print("start")
+        start_download()
     return redirect(url_for("home"))
 
-def start_download(video_url, video_data, video_container):
+def start_download():
     global download_thread
     if not download_thread:
         download_thread = True
-        socketio.start_background_task(download, video_url, video_data, video_container)
+        socketio.start_background_task(download)
 
+def download():
+    global download_thread, abort_flag, is_downloading, video_data, state
+    is_downloading = True
+    #abort_flag = False
+    #print("download")
+    try:
+        while True:  # Endlosschleife, solange es noch Videos gibt
+            if not video_data:
+                break  # Queue leer → beenden
 
-def download(video_url, video_data, video_container):
-    global download_thread, abort_flag
-    abort_flag = False
-    if video_url:
-        # Hier senden wir eine reine Statusnachricht ohne Fortschrittsdaten
-        socketio.emit('progress', {
-            'message': '⏳ Download processing...'
-        })
+            current_video = video_data.pop(0)  # Nimm das erste aus der Liste
+            socketio.emit('video_list', {
+                "queue": video_data,
+                "current": current_video
+            })
 
-        download_folder = read("download_folder")
-        if not os.path.exists(download_folder):
-            return "Not valid folder"
+            video_url = current_video["video_url"]
+            video_resolution = current_video["video_resolution"]
+            video_container = current_video["video_container"]
 
-        # Den Pfad für den Download setzen
-        ydl_opts = {
-            'format': video_data,  # schlechteste Qualität, um Beispiel zu zeigen
-            'outtmpl': os.path.join(download_folder, '%(title)s.%(ext)s'),
-            'merge_output_format': video_container,
-            'progress_hooks': [progress_hook],
-            'no_color': True, # Suppresses coloured output, as otherwise the numbers cannot be displayed correctly in the browser
-        }
-        print(ydl_opts)
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([video_url])
-        except yt_dlp.utils.DownloadError as e:
-            print("Download aborted:", e)
+            if video_url:
+                # Hier senden wir eine reine Statusnachricht ohne Fortschrittsdaten
+                socketio.emit('progress', {
+                    'message': '⏳ Download processing...'
+                })
+
+                download_folder = read("download_folder")
+                if not os.path.exists(download_folder):
+                    return "Not valid folder"
+
+                # Den Pfad für den Download setzen
+                ydl_opts = {
+                    'format': video_resolution,  # schlechteste Qualität, um Beispiel zu zeigen
+                    'outtmpl': os.path.join(download_folder, '%(title)s.%(ext)s'),
+                    'merge_output_format': video_container,
+                    'progress_hooks': [progress_hook],
+                    'no_color': True, # Suppresses coloured output, as otherwise the numbers cannot be displayed correctly in the browser
+                    #'noplaylist': True,
+                    #'youtube_include_dash_manifest': True,  # erzwingt DASH-Include
+                    #'geo_bypass': True,  # falls länderspezifische Sperre
+                    #'youtube_skip_dash_manifest': False,
+                }
+                print(ydl_opts)
+                try:
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        ydl.download([video_url])
+                except yt_dlp.utils.DownloadError as e:
+                    print("Download aborted:", e)
+    finally:
         download_thread = False
+        is_downloading = False
+
 
 @app.route('/abort', methods=["GET", "POST"])
 def abort():
@@ -230,30 +298,15 @@ def read(entry):
             return video_data
 
 def convert_command_to_text(cmd):
-    video_quality_cmd = ["best", "worst", "bestvideo", "bestaudio", "worstvideo", "worstaudio", "bestvideo+bestaudio/best"]
+    global video_quality, video_quality_cmd
 
-    video_quality = ["Best video and audio",
-                     "Worst video and audio",
-                     "Best video (video only)",
-                     "Best audio (audio only)",
-                     "Worst video (video only)",
-                     "Worst audio (audio only)",
-                     "Best video and best audio (seperated downloads, merged after download, provides in some cases better quality)"]
     index = video_quality_cmd.index(cmd)
     description = video_quality[index]
     return description
 
 def convert_text_to_command(description):
-    video_quality_cmd = ["best", "worst", "bestvideo", "bestaudio", "worstvideo", "worstaudio",
-                         "bestvideo+bestaudio/best"]
+    global video_quality, video_quality_cmd
 
-    video_quality = ["Best video and audio",
-                     "Worst video and audio",
-                     "Best video (video only)",
-                     "Best audio (audio only)",
-                     "Worst video (video only)",
-                     "Worst audio (audio only)",
-                     "Best video and best audio (seperated downloads, merged after download, provides in some cases better quality)"]
     index = video_quality.index(description)
     cmd = video_quality_cmd[index]
     return cmd
@@ -264,7 +317,9 @@ def open_browser():
     return
 
 if __name__ == '__main__':
-    open_browser()
+    #open_browser()
     socketio.run(app, host="0.0.0.0", port=5000, debug=True)
 
 
+# TODO: 6 Sekunden warten, in Logs bei Papa
+# TODO: Dropdown wird nicht gespeichert

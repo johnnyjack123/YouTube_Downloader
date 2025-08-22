@@ -69,6 +69,8 @@
    class="btn btn-gradient mb-4" style="display: none;">
    Cancel Download
 </a>
+<h3 class="mt-4">Download Queue</h3>
+<ul id="videoList" class="list-group mb-4"></ul>
 
 </div>
 
@@ -100,6 +102,31 @@
         document.getElementById('progress-text').textContent =
             `Progress: ${data.percent} | Speed: ${data.speed} | ETA: ${data.eta}`;
     });
+
+    socket.on('video_list', function(data) {
+    console.log("Aktuelle Videoliste:", data);
+
+    // aktuelles Video anzeigen
+    let current = data.current;
+    if (current) {
+        document.getElementById("progress-text").textContent =
+            `Aktuell: ${current.video_url} (${current.video_resolution}, ${current.video_container})`;
+    }
+
+    // Warteschlange anzeigen
+    let list = document.getElementById("videoList");
+    if (data.queue.length > 0) {
+    list.innerHTML = "";
+    data.queue.forEach(video => {
+        let li = document.createElement("li");
+        li.textContent = `${video.video_url} (${video.video_resolution}, ${video.video_container})`;
+        list.appendChild(li);
+    });
+}
+
+});
+
+
 </script>
 </body>
 </html>

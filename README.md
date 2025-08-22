@@ -9,7 +9,7 @@ YouTube Downloader is a tool based on [yt-dlp](https://github.com/yt-dlp/yt-dlp?
 2. Make sure [Python](https://www.python.org/downloads/) is installed on your PC.
 3. Move in the command line to the folder where the `yt-dlp_backend.py` file is located.
 4. Run the command `pip install -r requirements.txt` to install the necessary librarys.
-5. Run the command `python yt-dlp_backend` to launch the program.
+5. Run the command `python yt-dlp_backend.py` to launch the program.
 6. If everything works correctly a browser window will open.
 
 #### Using YouTube Downloader
