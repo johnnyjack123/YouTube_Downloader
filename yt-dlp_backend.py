@@ -191,6 +191,80 @@ def download():
                         ydl.download([video_url])
                 except yt_dlp.utils.DownloadError as e:
                     print("Download aborted:", e)
+                    print("Try to find a valid resolution. This can take a little while")
+                    print("test1")
+                    # Search for available download formats
+                    with yt_dlp.YoutubeDL({'quiet': True}) as ydl_extract:
+                        info_dict = ydl_extract.extract_info(video_url, download=False)
+                        formats_list = info_dict.get('formats', [])
+
+                    # Filter video formats
+                    video_formats = [f for f in formats_list if f.get('vcodec') != 'none']
+
+                    # Filter audio formats
+                    audio_formats = [f for f in formats_list if f.get('acodec') != 'none']
+
+                    # Sort videos by resolution (height)
+                    video_formats_sorted = sorted(video_formats, key=lambda f: f.get('height') or 0)
+
+                    # Sort audio by bitrate
+                    audio_formats_sorted = sorted(audio_formats, key=lambda f: f.get('abr') or 0)
+                    print("test2")
+                    file = read("file")
+                    print("checkbox: " + str(file["checkbox"]))
+                    # Find the correct quality dependent on users choice
+                    if not file["checkbox"]:
+                        print("In if")
+                        if video_resolution == "bestvideo+bestaudio/best":
+                            # Best quality
+                            video_format = video_formats_sorted[-1]['format_id']
+                            audio_format = audio_formats_sorted[-1]['format_id']
+                        elif video_resolution == "best":
+                            # Medium quality
+                            video_format = video_formats_sorted[len(video_formats_sorted) // 2]['format_id']
+                            audio_format = audio_formats_sorted[len(audio_formats_sorted) // 2]['format_id']
+                        elif video_resolution == "worstvideo+worstaudio/worst":
+                            # Worst quality
+                            video_format = video_formats_sorted[0]['format_id']
+                            audio_format = audio_formats_sorted[0]['format_id']
+                        elif video_resolution == "bestvideo":
+                            video_format = video_formats_sorted[-1]['format_id']
+                            audio_format = False
+                        elif video_resolution == "worstvideo":
+                            video_format = video_formats_sorted[0]['format_id']
+                            audio_format = False
+                        elif video_resolution == "bestaudio":
+                            video_format = False
+                            audio_format = audio_formats_sorted[-1]['format_id']
+                        elif video_resolution == "worstaudio":
+                            video_format = False
+                            audio_format = audio_formats_sorted[0]['format_id']
+                        else:
+                            print("Resolution not found.")
+                            break
+
+                        # Create command for yt-dlp
+                        if video_format and audio_format:
+                            video_resolution = f"{video_format}+{audio_format}"
+                        elif video_format:
+                            video_resolution = f"{video_format}"
+                        elif audio_format:
+                            video_resolution = f"{audio_format}"
+
+                        # Download settings for yt-dlp
+                        ydl_opts = {
+                            'format': video_resolution,
+                            'outtmpl': os.path.join(download_folder, '%(title)s.%(ext)s'),
+                            'merge_output_format': video_container,
+                            'progress_hooks': [progress_hook],
+                            'no_color': True,
+                        }
+
+                    try:
+                        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                            ydl.download([video_url])
+                    except yt_dlp.utils.DownloadError as e:
+                        print("Download aborted:", e)
     finally:
         download_thread = False
         is_downloading = False
@@ -323,3 +397,42 @@ if __name__ == '__main__':
 
 # TODO: 6 Sekunden warten, in Logs bei Papa
 # TODO: Dropdown wird nicht gespeichert
+
+"""
+
+def download_video(video_url, download_folder, desired_format="best"):
+    try:
+        ydl_opts = {
+            'format': desired_format,
+            'outtmpl': f'{download_folder}/%(title)s.%(ext)s',
+            'merge_output_format': 'mp4',
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([video_url])
+
+    except yt_dlp.utils.DownloadError as e:
+        print(f"Fehler beim Download mit {desired_format}: {e}")
+        print("Starte dynamische Formatwahl...")
+
+        # Infos abrufen ohne Download
+        with yt_dlp.YoutubeDL({'listformats': True}) as ydl:
+            info = ydl.extract_info(video_url, download=False)
+        
+        # Formate filtern: nur Progressive (Video+Audio) bevorzugen
+        progressive = [f for f in info['formats'] if f.get('acodec') != 'none' and f.get('vcodec') != 'none']
+        
+        # Sortieren nach Qualität (Auflösung)
+        progressive.sort(key=lambda f: f.get('height', 0))
+        
+        # Wähle schlechteste, mittlere oder beste nach Bedarf
+        fallback_format = progressive[0]['format_id']  # schlechteste
+        print(f"Fallback-Format: {fallback_format}")
+
+        # Download erneut versuchen
+        with yt_dlp.YoutubeDL({
+            'format': fallback_format,
+            'outtmpl': f'{download_folder}/%(title)s.%(ext)s',
+            'merge_output_format': 'mp4',
+        }) as ydl:
+            ydl.download([video_url])
+"""
