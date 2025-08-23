@@ -72,8 +72,20 @@
 <h3 class="mt-4">Download Queue</h3>
 <ul id="videoList" class="list-group mb-4"></ul>
 
-</div>
+<h3>Console</h3>
+<div class="console-box">
 
+    {% for command in console_socket %}
+    <div class="text">
+    <span>
+        <strong class="console-text">[console]:</strong> {{ command }}
+    </span>
+</div>
+    {% endfor %}
+<div class="console" id="console">
+    </div>
+</div>
+</div>
 <script>
     var socket = io();
     var cancelLink = document.getElementById('cancel-download');
@@ -126,7 +138,23 @@
 
 });
 
+const console = document.getElementById("console");
 
+    const createMessage = (msg) => {
+        const content = `
+<div class="text">
+    <span>
+        <strong class="console-text">[console]</strong>: ${msg}
+    </span>
+</div>
+`;
+console.innerHTML += content;
+
+    };
+
+    socket.on("console", (msg) => {
+        createMessage(msg);
+    });
 </script>
 </body>
 </html>

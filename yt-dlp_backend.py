@@ -29,6 +29,8 @@ quality_map = {
 
 video_quality_cmd = list(quality_map.keys())
 
+console_socket = []
+
 app = Flask(
     __name__,
     template_folder = "./templates",
@@ -37,10 +39,16 @@ app = Flask(
 
 socketio = SocketIO(app, async_mode="eventlet", cors_allowed_origins="*")
 
+@socketio.on("connect")
+def handle_connect():
+    # TODO: Console in Array, Array wird immer bei reload mitgeschickt
+    print("Client connected")
+    console("Client connected")
+    #socketio.emit("console", "Client connected")
+
 @app.route('/', methods=["GET", "POST"])
 def home():
     global video_quality_cmd
-
     deafult_download_folder = os.path.join(os.path.expanduser("~"), "Videos")
 
     deafult_content = {
@@ -56,7 +64,7 @@ def home():
         with open("userdata.json", "w", encoding="utf-8") as f:
             json.dump(deafult_content, f, indent=4, ensure_ascii=False)
 
-    video_resolution = ["720", "1080", "1920", "1440"]
+    video_resolution = ["720", "1080", "1920", "1440", "2160"]
     video_container = ["mp4", "mov", "mkv", "webm", "avi"]
 
     data = read("file")
@@ -85,7 +93,8 @@ def home():
                            video_quality=video_quality,
                            video_resolution=video_resolution,
                            video_container=video_container,
-                           checkbox=checkbox)
+                           checkbox=checkbox,
+                           console_socket=console_socket)
 
 @app.route('/video_settings', methods=["GET", "POST"])
 def video_settings():
@@ -148,6 +157,7 @@ def download():
     is_downloading = True
     #abort_flag = False
     #print("download")
+    console("Preparing download")
     try:
         while True:  # Endlosschleife, solange es noch Videos gibt
             if not video_data:
@@ -180,6 +190,7 @@ def download():
                     'merge_output_format': video_container,
                     'progress_hooks': [progress_hook],
                     'no_color': True, # Suppresses coloured output, as otherwise the numbers cannot be displayed correctly in the browser
+                    'logger': Logger(),
                     #'noplaylist': True,
                     #'youtube_include_dash_manifest': True,  # erzwingt DASH-Include
                     #'geo_bypass': True,  # falls länderspezifische Sperre
@@ -258,6 +269,7 @@ def download():
                             'merge_output_format': video_container,
                             'progress_hooks': [progress_hook],
                             'no_color': True,
+                            'logger': Logger(),
                         }
 
                     try:
@@ -268,7 +280,6 @@ def download():
     finally:
         download_thread = False
         is_downloading = False
-
 
 @app.route('/abort', methods=["GET", "POST"])
 def abort():
@@ -380,6 +391,29 @@ def convert_text_to_command(description):
             return cmd
     return None
 
+class Logger:
+    def debug(self, msg):
+        if msg.startswith("[info] Testing format"):
+            command = "[yt-dlp]: Testing formats"
+            print(command)
+            console(command)
+
+    def warning(self, msg):
+        print("WARN:", msg)
+
+    def error(self, msg):
+        print("ERROR:", msg)
+
+def console(command):
+    global console_socket
+    if command == "Client connected":
+        if "Client connected" in console_socket:
+            return
+    socketio.emit("console", command)
+    socketio.sleep(0)
+    console_socket.append(command)
+    return
+
 def open_browser():
     url = "http://127.0.0.1:5000"
     webbrowser.open(url)
@@ -393,3 +427,4 @@ if __name__ == '__main__':
 # TODO: 6 Sekunden warten, in Logs bei Papa
 # TODO: Dropdown wird nicht gespeichert
 # TODO: QUEUE über query parameter an Website schicken
+# TODO: Fallback merger mit time out, eigenes ffmpeg wird angestoßen

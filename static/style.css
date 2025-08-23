@@ -113,3 +113,29 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+.console-box {
+    border-color: black;
+    border-width: 2px;
+    border-style: solid;
+    border-radius: 10px;
+    background-color: rgba(25, 25, 25, 0.85);
+    height: 20vh;
+    display: flex;
+    flex-direction: column;
+    width: 80vw;
+    align-items: stretch;
+    overflow-y: scroll;
+    flex: 1;
+    width: 100%
+}
+
+.console {
+    overflow-y: scroll;
+    flex: 1;
+    width: 100%
+}
+
+.console-text {
+    color: #04de1a;
+}
