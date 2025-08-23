@@ -17,21 +17,17 @@ video_data = []
 
 state = True
 
-video_quality_cmd = ["worstvideo+worstaudio/worst",
-                     "bestvideo+bestaudio/best",
-                     "best",
-                     "bestvideo",
-                     "bestaudio",
-                     "worstvideo",
-                     "worstaudio"]
+quality_map = {
+    "worstvideo+worstaudio/worst": "Worst video and worst audio",
+    "bestvideo+bestaudio/best": "Best video and best audio",
+    "best": "Good quality",
+    "bestvideo": "Best video (video only)",
+    "bestaudio": "Best audio (audio only)",
+    "worstvideo": "Worst video (video only)",
+    "worstaudio": "Worst audio (audio only)"
+}
 
-video_quality = ["Worst video and worst audio",
-                 "Best video and best audio",
-                 "Good quality",
-                 "Best video (video only)",
-                 "Best audio (audio only)",
-                 "Worst video (video only)",
-                 "Worst audio (audio only)"]
+video_quality_cmd = list(quality_map.keys())
 
 app = Flask(
     __name__,
@@ -44,15 +40,17 @@ socketio = SocketIO(app, async_mode="eventlet", cors_allowed_origins="*")
 @app.route('/', methods=["GET", "POST"])
 def home():
     global video_quality_cmd
+
     deafult_download_folder = os.path.join(os.path.expanduser("~"), "Videos")
+
     deafult_content = {
-    "download_folder": deafult_download_folder,
-    "video_quality": "bestvideo+bestaudio/best",
-    "video_resolution": "1080",
-    "video_resolution_command": "bv[height<=1080]+ba/best[height<=1080]",
-    "video_container": "mp4",
-    "checkbox": False
-    }
+        "download_folder": deafult_download_folder,
+        "video_quality": "bestvideo+bestaudio/best",
+        "video_resolution": "1080",
+        "video_resolution_command": "bv[height<=1080]+ba/best[height<=1080]",
+        "video_container": "mp4",
+        "checkbox": False
+        }
 
     if not os.path.exists("userdata.json"):
         with open("userdata.json", "w", encoding="utf-8") as f:
@@ -65,11 +63,12 @@ def home():
     download_folder = data["download_folder"]
 
     deafult_video_quality = data["video_quality"]
-    video_quality_cmd.remove(deafult_video_quality)
-    video_quality_cmd.insert(0, deafult_video_quality)
-    for x, cmd in enumerate(video_quality_cmd):
-        description = convert_command_to_text(cmd)
-        video_quality[x] = description
+    if deafult_video_quality in video_quality_cmd:
+        video_quality_cmd.remove(deafult_video_quality)
+        video_quality_cmd.insert(0, deafult_video_quality)
+
+        # Erzeuge neue video_quality-Liste basierend auf quality_map
+    video_quality = [quality_map[cmd] for cmd in video_quality_cmd]
 
     deafult_video_resolution = data["video_resolution"]
     video_resolution.remove(deafult_video_resolution)
@@ -80,6 +79,7 @@ def home():
     video_container.insert(0, deafult_video_container)
 
     checkbox = read("checkbox")
+
     return render_template('index.html',
                            download_folder=download_folder,
                            video_quality=video_quality,
@@ -372,18 +372,13 @@ def read(entry):
             return video_data
 
 def convert_command_to_text(cmd):
-    global video_quality, video_quality_cmd
-
-    index = video_quality_cmd.index(cmd)
-    description = video_quality[index]
-    return description
+    return quality_map.get(cmd, "Unknown")
 
 def convert_text_to_command(description):
-    global video_quality, video_quality_cmd
-
-    index = video_quality.index(description)
-    cmd = video_quality_cmd[index]
-    return cmd
+    for cmd, text in quality_map.items():
+        if text == description:
+            return cmd
+    return None
 
 def open_browser():
     url = "http://127.0.0.1:5000"
@@ -397,42 +392,4 @@ if __name__ == '__main__':
 
 # TODO: 6 Sekunden warten, in Logs bei Papa
 # TODO: Dropdown wird nicht gespeichert
-
-"""
-
-def download_video(video_url, download_folder, desired_format="best"):
-    try:
-        ydl_opts = {
-            'format': desired_format,
-            'outtmpl': f'{download_folder}/%(title)s.%(ext)s',
-            'merge_output_format': 'mp4',
-        }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([video_url])
-
-    except yt_dlp.utils.DownloadError as e:
-        print(f"Fehler beim Download mit {desired_format}: {e}")
-        print("Starte dynamische Formatwahl...")
-
-        # Infos abrufen ohne Download
-        with yt_dlp.YoutubeDL({'listformats': True}) as ydl:
-            info = ydl.extract_info(video_url, download=False)
-        
-        # Formate filtern: nur Progressive (Video+Audio) bevorzugen
-        progressive = [f for f in info['formats'] if f.get('acodec') != 'none' and f.get('vcodec') != 'none']
-        
-        # Sortieren nach Qualität (Auflösung)
-        progressive.sort(key=lambda f: f.get('height', 0))
-        
-        # Wähle schlechteste, mittlere oder beste nach Bedarf
-        fallback_format = progressive[0]['format_id']  # schlechteste
-        print(f"Fallback-Format: {fallback_format}")
-
-        # Download erneut versuchen
-        with yt_dlp.YoutubeDL({
-            'format': fallback_format,
-            'outtmpl': f'{download_folder}/%(title)s.%(ext)s',
-            'merge_output_format': 'mp4',
-        }) as ydl:
-            ydl.download([video_url])
-"""
+# TODO: QUEUE über query parameter an Website schicken
