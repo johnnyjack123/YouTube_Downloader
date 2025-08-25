@@ -63,18 +63,16 @@ def find_closest_resolution(video_height, video_formats):
     closest = min(valid_formats, key=lambda f: abs(f["height"] - video_height))
     return closest["format_id"], closest["height"]
 
-def merging_video_audio(video_url, video_format, audio_format, download_folder, progress_hook):
+def merging_video_audio(video_file, audio_file, output_file):
     # There are sometimes problems with the merging of files. If updating yt-dlp dont help there is a
     # code snipped to do the merging both video clips manually with ffmpeg.
-
-
-
     print("Merging")
     subprocess.run([
         'ffmpeg', '-y',
         '-i', video_file,
         '-i', audio_file,
-        '-c', 'copy',  # Re-Encoding vermeiden
+        '-c:v', 'copy',
+        '-c:a', 'aac',
         output_file
     ])
 

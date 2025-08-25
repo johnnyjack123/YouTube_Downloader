@@ -10,7 +10,7 @@ import webbrowser
 import logging
 import subprocess
 import sys
-from outsourced_functions import sort_formats, save, read
+from outsourced_functions import sort_formats, save, read, merging_video_audio
 
 download_thread = False
 abort_flag = False
@@ -90,7 +90,7 @@ def home():
     video_container.remove(deafult_video_container)
     video_container.insert(0, deafult_video_container)
 
-    checkbox = read("checkbox")
+    checkbox = read("custom_resolution_checkbox")
     video_checkbox = read("video_checkbox")
     audio_checkbox = read("audio_checkbox")
 
@@ -113,19 +113,21 @@ def video_settings():
         video_resolution = request.form.get("video_resolution")
         if not video_resolution:
             return "No resolution set"
-        #video_resolution_command = 'bv[height<=' + video_resolution + ']+ba[height<=' + video_resolution + ']'
+        video_resolution_command = 'bv[height<=' + video_resolution + ']+ba' #TODO: Dynamisch mit worst audio, audio wird aber separat in zweitem download herunter geladen
         save("video_resolution", video_resolution)
         #save("video_resolution_command", video_resolution_command)
-        save("checkbox", True)
+        save("custom_resolution_checkbox", True)
         #video_resolution = video_resolution_command
+        video_quality = False
+        audio_quality = False
     else:
         video_quality = request.form.get("video_quality")
         video_checkbox = request.form.get("video_checkbox")
         audio_checkbox = request.form.get("audio_checkbox")
 
-        video_quality = convert_text_to_command(video_quality, video_checkbox, audio_checkbox)
-        save("video_quality", video_quality)
-        save("checkbox", False)
+        video_quality, audio_quality = convert_text_to_command(video_quality, video_checkbox, audio_checkbox)
+
+        save("custom_resolution_checkbox", False)
 
         if video_checkbox == "yes":
             save("video_checkbox", True)
@@ -137,7 +139,10 @@ def video_settings():
         else:
             save("audio_checkbox", False)
 
-        video_resolution = video_quality
+
+        #video_resolution = video_quality + "+" + audio_quality
+        video_resolution = False
+        save("video_quality", video_quality)
     video_container = request.form.get("video_container")
     save("video_container", video_container)
     video_url = request.form.get("video_url")
@@ -150,6 +155,9 @@ def video_settings():
     entry = {
         "video_url": video_url,
         "video_resolution": video_resolution,
+        "custom_resolution_checkbox": custom_resolution,
+        "video_quality": video_quality,
+        "audio_quality": audio_quality,
         "video_container": video_container,
         "video_name": "Test" #video_metadata["title"]
     }
@@ -195,6 +203,9 @@ def download():
             video_url = current_video["video_url"]
             video_resolution = current_video["video_resolution"]
             video_container = current_video["video_container"]
+            video_quality = current_video["video_quality"]
+            audio_quality = current_video["audio_quality"]
+            custom_resolution = current_video["custom_resolution_checkbox"]
 
             if video_url:
                 # Hier senden wir eine reine Statusnachricht ohne Fortschrittsdaten
@@ -206,6 +217,7 @@ def download():
                 if not os.path.exists(download_folder):
                     return "Not valid folder"
 
+                """
                 # Den Pfad für den Download setzen
                 ydl_opts = {
                     'format': video_resolution,
@@ -221,37 +233,56 @@ def download():
                 }
 
                 print(ydl_opts)
-
+                """
+                if custom_resolution == "yes":
+                    pass
+                else:
+                    if video_quality:
+                        video_input = video_quality
+                        video = True
+                    else:
+                        video = False
+                    if audio_quality:
+                        audio_input = audio_quality
+                        audio = True
+                    else:
+                        audio = False
                 try:
-                    ydl_opts_video = {
-                        'format': video_resolution,
-                        'outtmpl': os.path.join(download_folder, '%(title)s_video.%(ext)s'),
-                        'progress_hooks': [progress_hook]
-                    }
 
-                    ydl_opts_audio = {
-                        'format': audio_resolution,
-                        'outtmpl': os.path.join(download_folder, '%(title)s_audio.%(ext)s'),
-                        'progress_hooks': [progress_hook]
-                    }
-                    with yt_dlp.YoutubeDL(ydl_opts_video) as ydl:
-                        info_video = ydl.extract_info(video_url, download=True)
-                        video_file = ydl.prepare_filename(info_video)  # gibt den richtigen Pfad zurück
+                    if video:
+                        ydl_opts_video = {
+                            'format': video_input,
+                            'outtmpl': os.path.join(download_folder, '%(title)s_video.%(ext)s'),
+                            'progress_hooks': [progress_hook]
+                        }
 
-                    with yt_dlp.YoutubeDL(ydl_opts_audio) as ydl:
-                        info_audio = ydl.extract_info(video_url, download=True)
-                        audio_file = ydl.prepare_filename(info_audio)
+                        with yt_dlp.YoutubeDL(ydl_opts_video) as ydl:
+                            info_video = ydl.extract_info(video_url, download=True)
+                            video_file = ydl.prepare_filename(info_video)  # returns the absolute path of the video file
+
+                    if audio:
+                        ydl_opts_audio = {
+                            'format': audio_input,
+                            'outtmpl': os.path.join(download_folder, '%(title)s_audio.%(ext)s'),
+                            'progress_hooks': [progress_hook]
+                        }
+
+                        with yt_dlp.YoutubeDL(ydl_opts_audio) as ydl:
+                            info_audio = ydl.extract_info(video_url, download=True)
+                            audio_file = ydl.prepare_filename(info_audio)
+
 
                     # video_file = os.path.join(download_folder, f"{info_video["title"]}_video.{info_video["ext"]}")
                     # audio_file = os.path.join(download_folder, f"{info_audio["title"]}_audio.{info_audio["ext"]}")
-                    output_file = os.path.join(download_folder, f"Output_py.mp4")
+                    output_file = os.path.join(download_folder, f"Output_file.mp4")
 
+                    if video and audio:
+                        merging_video_audio(video_file, audio_file, output_file,)
                 except yt_dlp.utils.DownloadError as e:
                     print("Download failed:", e)
     finally:
         download_thread = False
         is_downloading = False
-
 
 @app.route('/abort', methods=["GET", "POST"])
 def abort():
@@ -353,6 +384,8 @@ def convert_text_to_command(description, video_checkbox, audio_checkbox):
         if description == "Best":
             cmd_audio = "bestaudio/best" #Not the best way, because by single video downloads there is noch fallback.
         # No average, because "best" is already the best merged video and audio stream
+        if description == "Average":
+            cmd_audio = False
         if description == "Worst":
             cmd_audio = "worstaudio/worst"
     else:
@@ -421,4 +454,5 @@ if __name__ == '__main__':
 # TODO: Fallback merger mit time out, eigenes ffmpeg wird angestoßen
 # TODO: Sinnlose prints löschen
 # TODO: Only Audio/ Only Video Custom res und normal, normal worst, middle, best
-# TODO: REDME.MD aktualisieren wegen Qualitätseinstellungen und yt-dlp Library aktuell halte + automatischer Update
+# TODO: REDME.MD aktualisieren wegen Qualitätseinstellungen und yt-dlp Library aktuell halte + automatischer Update und ffmpeg installieren
+# TODO: Bei merge auf gewähltes Dateiformat eingehen
