@@ -8,6 +8,9 @@ import os
 import json
 import webbrowser
 import logging
+import subprocess
+import sys
+from outsourced_functions import sort_formats, save, read
 
 download_thread = False
 abort_flag = False
@@ -18,13 +21,11 @@ video_data = []
 state = True
 
 quality_map = {
-    "worstvideo+worstaudio/worst": "Worst video and worst audio",
-    "bestvideo+bestaudio/best": "Best video and best audio",
-    "best": "Good quality",
-    "bestvideo": "Best video (video only)",
-    "bestaudio": "Best audio (audio only)",
-    "worstvideo": "Worst video (video only)",
-    "worstaudio": "Worst audio (audio only)"
+    "best": "Average",
+    "bestvideo": "Best video",
+    "bestaudio": "Best audio",
+    "worstvideo": "Worst video",
+    "worstaudio": "Worst audio"
 }
 
 video_quality_cmd = list(quality_map.keys())
@@ -53,17 +54,20 @@ def home():
 
     deafult_content = {
         "download_folder": deafult_download_folder,
-        "video_quality": "bestvideo+bestaudio/best",
+        "video_quality": "best",
         "video_resolution": "1080",
-        "video_resolution_command": "bv[height<=1080]+ba/best[height<=1080]",
+        "video_resolution_command": "bv[height<=1080]+ba[height<=1080]",
         "video_container": "mp4",
-        "checkbox": False
+        "checkbox": False,
+        "video_checkbox": True,
+        "audio_checkbox": True
         }
 
     if not os.path.exists("userdata.json"):
         with open("userdata.json", "w", encoding="utf-8") as f:
             json.dump(deafult_content, f, indent=4, ensure_ascii=False)
 
+    video_quality = ["Best", "Average", "Worst"]
     video_resolution = ["720", "1080", "1920", "1440", "2160"]
     video_container = ["mp4", "mov", "mkv", "webm", "avi"]
 
@@ -71,12 +75,12 @@ def home():
     download_folder = data["download_folder"]
 
     deafult_video_quality = data["video_quality"]
-    if deafult_video_quality in video_quality_cmd:
-        video_quality_cmd.remove(deafult_video_quality)
-        video_quality_cmd.insert(0, deafult_video_quality)
+    if deafult_video_quality in video_quality:
+        video_quality.remove(deafult_video_quality)
+        video_quality.insert(0, deafult_video_quality)
 
         # Erzeuge neue video_quality-Liste basierend auf quality_map
-    video_quality = [quality_map[cmd] for cmd in video_quality_cmd]
+    #video_quality = [quality_map[cmd] for cmd in video_quality_cmd]
 
     deafult_video_resolution = data["video_resolution"]
     video_resolution.remove(deafult_video_resolution)
@@ -87,6 +91,9 @@ def home():
     video_container.insert(0, deafult_video_container)
 
     checkbox = read("checkbox")
+    video_checkbox = read("video_checkbox")
+    audio_checkbox = read("audio_checkbox")
+
 
     return render_template('index.html',
                            download_folder=download_folder,
@@ -94,7 +101,9 @@ def home():
                            video_resolution=video_resolution,
                            video_container=video_container,
                            checkbox=checkbox,
-                           console_socket=console_socket)
+                           console_socket=console_socket,
+                           video_checkbox=video_checkbox,
+                           audio_checkbox=audio_checkbox)
 
 @app.route('/video_settings', methods=["GET", "POST"])
 def video_settings():
@@ -104,16 +113,30 @@ def video_settings():
         video_resolution = request.form.get("video_resolution")
         if not video_resolution:
             return "No resolution set"
-        video_resolution_command = 'bv[height<=' + video_resolution + ']+ba/best[height<=' + video_resolution + ']'
+        #video_resolution_command = 'bv[height<=' + video_resolution + ']+ba[height<=' + video_resolution + ']'
         save("video_resolution", video_resolution)
-        save("video_resolution_command", video_resolution_command)
+        #save("video_resolution_command", video_resolution_command)
         save("checkbox", True)
-        video_resolution = video_resolution_command
+        #video_resolution = video_resolution_command
     else:
         video_quality = request.form.get("video_quality")
-        video_quality = convert_text_to_command(video_quality)
+        video_checkbox = request.form.get("video_checkbox")
+        audio_checkbox = request.form.get("audio_checkbox")
+
+        video_quality = convert_text_to_command(video_quality, video_checkbox, audio_checkbox)
         save("video_quality", video_quality)
         save("checkbox", False)
+
+        if video_checkbox == "yes":
+            save("video_checkbox", True)
+        else:
+            save("video_checkbox", False)
+
+        if audio_checkbox == "yes":
+            save("audio_checkbox", True)
+        else:
+            save("audio_checkbox", False)
+
         video_resolution = video_quality
     video_container = request.form.get("video_container")
     save("video_container", video_container)
@@ -185,101 +208,50 @@ def download():
 
                 # Den Pfad für den Download setzen
                 ydl_opts = {
-                    'format': video_resolution,  # schlechteste Qualität, um Beispiel zu zeigen
+                    'format': video_resolution,
                     'outtmpl': os.path.join(download_folder, '%(title)s.%(ext)s'),
-                    'merge_output_format': video_container,
+                    'merge_output_format': None,
                     'progress_hooks': [progress_hook],
                     'no_color': True, # Suppresses coloured output, as otherwise the numbers cannot be displayed correctly in the browser
-                    'logger': Logger(),
+                    #'logger': Logger(),
                     #'noplaylist': True,
                     #'youtube_include_dash_manifest': True,  # erzwingt DASH-Include
                     #'geo_bypass': True,  # falls länderspezifische Sperre
                     #'youtube_skip_dash_manifest': False,
                 }
+
                 print(ydl_opts)
+
                 try:
-                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                        ydl.download([video_url])
+                    ydl_opts_video = {
+                        'format': video_resolution,
+                        'outtmpl': os.path.join(download_folder, '%(title)s_video.%(ext)s'),
+                        'progress_hooks': [progress_hook]
+                    }
+
+                    ydl_opts_audio = {
+                        'format': audio_resolution,
+                        'outtmpl': os.path.join(download_folder, '%(title)s_audio.%(ext)s'),
+                        'progress_hooks': [progress_hook]
+                    }
+                    with yt_dlp.YoutubeDL(ydl_opts_video) as ydl:
+                        info_video = ydl.extract_info(video_url, download=True)
+                        video_file = ydl.prepare_filename(info_video)  # gibt den richtigen Pfad zurück
+
+                    with yt_dlp.YoutubeDL(ydl_opts_audio) as ydl:
+                        info_audio = ydl.extract_info(video_url, download=True)
+                        audio_file = ydl.prepare_filename(info_audio)
+
+                    # video_file = os.path.join(download_folder, f"{info_video["title"]}_video.{info_video["ext"]}")
+                    # audio_file = os.path.join(download_folder, f"{info_audio["title"]}_audio.{info_audio["ext"]}")
+                    output_file = os.path.join(download_folder, f"Output_py.mp4")
+
                 except yt_dlp.utils.DownloadError as e:
-                    print("Download aborted:", e)
-                    print("Try to find a valid resolution. This can take a little while")
-                    print("test1")
-                    # Search for available download formats
-                    with yt_dlp.YoutubeDL({'quiet': True}) as ydl_extract:
-                        info_dict = ydl_extract.extract_info(video_url, download=False)
-                        formats_list = info_dict.get('formats', [])
-
-                    # Filter video formats
-                    video_formats = [f for f in formats_list if f.get('vcodec') != 'none']
-
-                    # Filter audio formats
-                    audio_formats = [f for f in formats_list if f.get('acodec') != 'none']
-
-                    # Sort videos by resolution (height)
-                    video_formats_sorted = sorted(video_formats, key=lambda f: f.get('height') or 0)
-
-                    # Sort audio by bitrate
-                    audio_formats_sorted = sorted(audio_formats, key=lambda f: f.get('abr') or 0)
-                    print("test2")
-                    file = read("file")
-                    print("checkbox: " + str(file["checkbox"]))
-                    # Find the correct quality dependent on users choice
-                    if not file["checkbox"]:
-                        print("In if")
-                        if video_resolution == "bestvideo+bestaudio/best":
-                            # Best quality
-                            video_format = video_formats_sorted[-1]['format_id']
-                            audio_format = audio_formats_sorted[-1]['format_id']
-                        elif video_resolution == "best":
-                            # Medium quality
-                            video_format = video_formats_sorted[len(video_formats_sorted) // 2]['format_id']
-                            audio_format = audio_formats_sorted[len(audio_formats_sorted) // 2]['format_id']
-                        elif video_resolution == "worstvideo+worstaudio/worst":
-                            # Worst quality
-                            video_format = video_formats_sorted[0]['format_id']
-                            audio_format = audio_formats_sorted[0]['format_id']
-                        elif video_resolution == "bestvideo":
-                            video_format = video_formats_sorted[-1]['format_id']
-                            audio_format = False
-                        elif video_resolution == "worstvideo":
-                            video_format = video_formats_sorted[0]['format_id']
-                            audio_format = False
-                        elif video_resolution == "bestaudio":
-                            video_format = False
-                            audio_format = audio_formats_sorted[-1]['format_id']
-                        elif video_resolution == "worstaudio":
-                            video_format = False
-                            audio_format = audio_formats_sorted[0]['format_id']
-                        else:
-                            print("Resolution not found.")
-                            break
-
-                        # Create command for yt-dlp
-                        if video_format and audio_format:
-                            video_resolution = f"{video_format}+{audio_format}"
-                        elif video_format:
-                            video_resolution = f"{video_format}"
-                        elif audio_format:
-                            video_resolution = f"{audio_format}"
-
-                        # Download settings for yt-dlp
-                        ydl_opts = {
-                            'format': video_resolution,
-                            'outtmpl': os.path.join(download_folder, '%(title)s.%(ext)s'),
-                            'merge_output_format': video_container,
-                            'progress_hooks': [progress_hook],
-                            'no_color': True,
-                            'logger': Logger(),
-                        }
-
-                    try:
-                        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                            ydl.download([video_url])
-                    except yt_dlp.utils.DownloadError as e:
-                        print("Download aborted:", e)
+                    print("Download failed:", e)
     finally:
         download_thread = False
         is_downloading = False
+
 
 @app.route('/abort', methods=["GET", "POST"])
 def abort():
@@ -363,33 +335,40 @@ def progress_hook(d):
         print("Download abgeschlossen, wird nun verarbeitet...")
         socketio.sleep(0)
 
-def save(entry, video_data):
-    with open("userdata.json", "r", encoding="utf-8") as file:
-        data = json.load(file)
-        data[entry] = video_data
-    with open("userdata.json", "w", encoding="utf-8") as file:
-        json.dump(data, file, ensure_ascii=False, indent=4)
-    return
-
-def read(entry):
-    if entry == "file":
-        with open("userdata.json", "r", encoding="utf-8") as file:
-            data = json.load(file)
-            return data
-    elif entry:
-        with open("userdata.json", "r", encoding="utf-8") as file:
-            data = json.load(file)
-            video_data = data[entry]
-            return video_data
-
 def convert_command_to_text(cmd):
     return quality_map.get(cmd, "Unknown")
 
-def convert_text_to_command(description):
-    for cmd, text in quality_map.items():
-        if text == description:
-            return cmd
-    return None
+def convert_text_to_command(description, video_checkbox, audio_checkbox):
+    if video_checkbox == "yes":
+        if description == "Best":
+            cmd_video = "bestvideo"
+        if description == "Average":
+            cmd_video = "best"
+        if description == "Worst":
+            cmd_video = "worstvideo"
+    else:
+        cmd_video = False
+
+    if audio_checkbox == "yes":
+        if description == "Best":
+            cmd_audio = "bestaudio/best" #Not the best way, because by single video downloads there is noch fallback.
+        # No average, because "best" is already the best merged video and audio stream
+        if description == "Worst":
+            cmd_audio = "worstaudio/worst"
+    else:
+        cmd_audio = False
+    """
+    if video_checkbox == "yes" and audio_checkbox == "yes":
+        cmd = cmd_video + "+" + cmd_audio
+        return cmd
+    elif video_checkbox == "yes" and audio_checkbox != "yes":
+        cmd = cmd_video
+    elif video_checkbox != "yes" and audio_checkbox == "yes":
+        cmd = cmd_audio
+    else:
+        return None
+        """
+    return cmd_video, cmd_audio
 
 class Logger:
     def debug(self, msg):
@@ -397,17 +376,25 @@ class Logger:
             command = "[yt-dlp]: Testing formats"
             print(command)
             console(command)
+        else:
+            command = "[yt-dlp]" + msg
+            console(command)
 
     def warning(self, msg):
         print("WARN:", msg)
+        console(msg)
 
     def error(self, msg):
         print("ERROR:", msg)
+        console(msg)
 
 def console(command):
     global console_socket
     if command == "Client connected":
         if "Client connected" in console_socket:
+            return
+    if command == "[yt-dlp]: Testing formats":
+        if "[yt-dlp]: Testing formats" in console_socket:
             return
     socketio.emit("console", command)
     socketio.sleep(0)
@@ -419,12 +406,19 @@ def open_browser():
     webbrowser.open(url)
     return
 
+def update_yt_dlp():
+    subprocess.run([sys.executable, "-m", "pip", "install", "-U", "yt-dlp"])
+
+
 if __name__ == '__main__':
+    update_yt_dlp()
     #open_browser()
     socketio.run(app, host="0.0.0.0", port=5000, debug=True)
 
 
 # TODO: 6 Sekunden warten, in Logs bei Papa
-# TODO: Dropdown wird nicht gespeichert
-# TODO: QUEUE über query parameter an Website schicken
+# TODO: QUEUE über query parameter an Website schicken, mit socket aktualisieren
 # TODO: Fallback merger mit time out, eigenes ffmpeg wird angestoßen
+# TODO: Sinnlose prints löschen
+# TODO: Only Audio/ Only Video Custom res und normal, normal worst, middle, best
+# TODO: REDME.MD aktualisieren wegen Qualitätseinstellungen und yt-dlp Library aktuell halte + automatischer Update

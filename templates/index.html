@@ -24,6 +24,7 @@
 
         <input type="text" name="video_url" class="form-control mb-3"
                placeholder="Insert YouTube Link" autocomplete="off">
+    <hr class="my-4">
 
         <label class="form-label"><strong>Video Quality Settings</strong></label>
         <select name="video_quality" class="form-select mb-3">
@@ -31,6 +32,21 @@
             <option value="{{ quality }}">{{ quality }}</option>
             {% endfor %}
         </select>
+{% if video_checkbox %}
+                        <input type="checkbox" name="video_checkbox" value="yes" class="form-check-input" id="videoCheckbox" checked>
+            {% else %}
+
+            <input type="checkbox" name="video_checkbox" value="yes" class="form-check-input" id="videoCheckbox">
+            {% endif %}
+<label for="videoCheckbox" class="form-check-label">Download Video</label>
+        {% if audio_checkbox %}
+                        <input type="checkbox" name="audio_checkbox" value="yes" class="form-check-input" id="audioCheckbox" checked>
+            {% else %}
+
+            <input type="checkbox" name="audio_checkbox" value="yes" class="form-check-input" id="audioCheckbox">
+            {% endif %}
+        <label for="audioCheckbox" class="form-check-label">Download Audio</label>
+    <hr class="my-4">
 
         <label class="form-label"><strong>Custom Video Resolution</strong></label>
         <select name="video_resolution" class="form-select mb-2">
@@ -48,12 +64,18 @@
             <label for="customRes" class="form-check-label">Use custom resolution</label>
         </div>
 
+            <hr class="my-4">
+
+
         <label class="form-label"><strong>Video Container</strong></label>
         <select name="video_container" class="form-select mb-4">
             {% for container in video_container %}
             <option value="{{ container }}">{{ container }}</option>
             {% endfor %}
         </select>
+
+            <hr class="my-4">
+
 
         <input type="submit" class="btn btn-info w-100 btn-download" value="Start Download">
     </form>
