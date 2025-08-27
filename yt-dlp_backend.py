@@ -11,6 +11,7 @@ import logging
 import subprocess
 import sys
 from outsourced_functions import sort_formats, save, read, merging_video_audio
+from pathlib import Path
 
 download_thread = False
 abort_flag = False
@@ -259,7 +260,7 @@ def download():
                         with yt_dlp.YoutubeDL(ydl_opts_video) as ydl:
                             info_video = ydl.extract_info(video_url, download=True)
                             video_file = ydl.prepare_filename(info_video)  # returns the absolute path of the video file
-
+                    print("Video name: " + video_file)
                     if audio:
                         ydl_opts_audio = {
                             'format': audio_input,
@@ -274,10 +275,17 @@ def download():
 
                     # video_file = os.path.join(download_folder, f"{info_video["title"]}_video.{info_video["ext"]}")
                     # audio_file = os.path.join(download_folder, f"{info_audio["title"]}_audio.{info_audio["ext"]}")
-                    output_file = os.path.join(download_folder, f"Output_file.mp4")
+                    output_file = video_file + "_merged." + video_container
 
                     if video and audio:
-                        merging_video_audio(video_file, audio_file, output_file,)
+                        result = merging_video_audio(video_file, audio_file, output_file)
+
+                        if result:
+                            os.remove(video_file)
+                            os.remove(audio_file)
+                        else:
+                            print("Merging failed. Downloaded video and audio are still storaged in your download folder")
+
                 except yt_dlp.utils.DownloadError as e:
                     print("Download failed:", e)
     finally:
@@ -336,7 +344,7 @@ def change_download_folder():
 @app.route('/previous_folder', methods=["GET", "POST"])
 def previous_folder():
     path = request.args.get("path")
-    new_path = path.rsplit("\\", 1)[0]
+    new_path = path.rsplit("\\", 1)[0] # TODO: mit os machen
     return redirect(url_for("choose_download_folder_page", path=new_path))
 
 def progress_hook(d):
@@ -456,3 +464,5 @@ if __name__ == '__main__':
 # TODO: Only Audio/ Only Video Custom res und normal, normal worst, middle, best
 # TODO: REDME.MD aktualisieren wegen Qualitätseinstellungen und yt-dlp Library aktuell halte + automatischer Update und ffmpeg installieren
 # TODO: Bei merge auf gewähltes Dateiformat eingehen
+# TODO: Bei merge Fortschritsanzeige
+# TODO: yt-dlp update erst nach einem Tag wieder

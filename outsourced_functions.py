@@ -67,7 +67,7 @@ def merging_video_audio(video_file, audio_file, output_file):
     # There are sometimes problems with the merging of files. If updating yt-dlp dont help there is a
     # code snipped to do the merging both video clips manually with ffmpeg.
     print("Merging")
-    subprocess.run([
+    result = subprocess.run([
         'ffmpeg', '-y',
         '-i', video_file,
         '-i', audio_file,
@@ -75,6 +75,14 @@ def merging_video_audio(video_file, audio_file, output_file):
         '-c:a', 'aac',
         output_file
     ])
+
+    if result.returncode == 0:
+        print("Merging successful")
+        return True
+    else:
+        print("Merging failed")
+        print("Error:", result.stderr)
+        return False
 
 
 def save(entry, video_data):
