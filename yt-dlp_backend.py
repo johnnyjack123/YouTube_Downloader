@@ -22,11 +22,9 @@ video_data = []
 state = True
 
 quality_map = {
+    "bestvideo": "Best",
     "best": "Average",
-    "bestvideo": "Best video",
-    "bestaudio": "Best audio",
-    "worstvideo": "Worst video",
-    "worstaudio": "Worst audio"
+    "worstvideo": "Worst"
 }
 
 video_quality_cmd = list(quality_map.keys())
@@ -68,7 +66,7 @@ def home():
         with open("userdata.json", "w", encoding="utf-8") as f:
             json.dump(deafult_content, f, indent=4, ensure_ascii=False)
 
-    video_quality = ["Best", "Average", "Worst"]
+    video_quality = ["bestvideo", "best", "worstvideo"]
     video_resolution = ["720", "1080", "1920", "1440", "2160"]
     video_container = ["mp4", "mov", "mkv", "webm", "avi"]
 
@@ -76,10 +74,11 @@ def home():
     download_folder = data["download_folder"]
 
     deafult_video_quality = data["video_quality"]
-    if deafult_video_quality in video_quality:
-        video_quality.remove(deafult_video_quality)
-        video_quality.insert(0, deafult_video_quality)
 
+    #if deafult_video_quality in video_quality:
+    video_quality.remove(deafult_video_quality)
+    video_quality.insert(0, deafult_video_quality)
+    video_quality = convert_command_to_text(video_quality)
         # Erzeuge neue video_quality-Liste basierend auf quality_map
     #video_quality = [quality_map[cmd] for cmd in video_quality_cmd]
 
@@ -95,7 +94,6 @@ def home():
     video_checkbox = read("video_checkbox")
     audio_checkbox = read("audio_checkbox")
 
-
     return render_template('index.html',
                            download_folder=download_folder,
                            video_quality=video_quality,
@@ -110,6 +108,8 @@ def home():
 def video_settings():
     global video_data, is_downloading
     custom_resolution = request.form.get("custom_resolution")
+    video_checkbox = request.form.get("video_checkbox")
+    audio_checkbox = request.form.get("audio_checkbox")
     if custom_resolution == "yes":
         video_resolution = request.form.get("video_resolution")
         if not video_resolution:
@@ -123,27 +123,25 @@ def video_settings():
         audio_quality = False
     else:
         video_quality = request.form.get("video_quality")
-        video_checkbox = request.form.get("video_checkbox")
-        audio_checkbox = request.form.get("audio_checkbox")
 
         video_quality, audio_quality = convert_text_to_command(video_quality, video_checkbox, audio_checkbox)
 
         save("custom_resolution_checkbox", False)
 
-        if video_checkbox == "yes":
-            save("video_checkbox", True)
-        else:
-            save("video_checkbox", False)
-
-        if audio_checkbox == "yes":
-            save("audio_checkbox", True)
-        else:
-            save("audio_checkbox", False)
-
-
         #video_resolution = video_quality + "+" + audio_quality
         video_resolution = False
         save("video_quality", video_quality)
+
+    if video_checkbox == "yes":
+        save("video_checkbox", True)
+    else:
+        save("video_checkbox", False)
+
+    if audio_checkbox == "yes":
+        save("audio_checkbox", True)
+    else:
+        save("audio_checkbox", False)
+
     video_container = request.form.get("video_container")
     save("video_container", video_container)
     video_url = request.form.get("video_url")
@@ -160,7 +158,9 @@ def video_settings():
         "video_quality": video_quality,
         "audio_quality": audio_quality,
         "video_container": video_container,
-        "video_name": "Test" #video_metadata["title"]
+        "video_name": "Test", #video_metadata["title"]
+        "video_checkbox": video_checkbox,
+        "audio_checkbox": audio_checkbox
     }
 
     video_data.append(entry)
@@ -195,7 +195,8 @@ def download():
             if not video_data:
                 break  # Queue leer → beenden
 
-            current_video = video_data.pop(0)  # Nimm das erste aus der Liste
+            current_video = video_data.pop(0)
+
             socketio.emit('video_list', {
                 "queue": video_data,
                 "current": current_video
@@ -207,9 +208,10 @@ def download():
             video_quality = current_video["video_quality"]
             audio_quality = current_video["audio_quality"]
             custom_resolution = current_video["custom_resolution_checkbox"]
+            video_checkbox = current_video["video_checkbox"]
+            audio_checkbox = current_video["audio_checkbox"]
 
             if video_url:
-                # Hier senden wir eine reine Statusnachricht ohne Fortschrittsdaten
                 socketio.emit('progress', {
                     'message': '⏳ Download processing...'
                 })
@@ -260,7 +262,7 @@ def download():
                         with yt_dlp.YoutubeDL(ydl_opts_video) as ydl:
                             info_video = ydl.extract_info(video_url, download=True)
                             video_file = ydl.prepare_filename(info_video)  # returns the absolute path of the video file
-                    print("Video name: " + video_file)
+
                     if audio:
                         ydl_opts_audio = {
                             'format': audio_input,
@@ -272,12 +274,8 @@ def download():
                             info_audio = ydl.extract_info(video_url, download=True)
                             audio_file = ydl.prepare_filename(info_audio)
 
-
-                    # video_file = os.path.join(download_folder, f"{info_video["title"]}_video.{info_video["ext"]}")
-                    # audio_file = os.path.join(download_folder, f"{info_audio["title"]}_audio.{info_audio["ext"]}")
-                    output_file = video_file + "_merged." + video_container
-
                     if video and audio:
+                        output_file = video_file + "_merged." + video_container
                         result = merging_video_audio(video_file, audio_file, output_file)
 
                         if result:
@@ -374,41 +372,33 @@ def progress_hook(d):
         print("Download abgeschlossen, wird nun verarbeitet...")
         socketio.sleep(0)
 
-def convert_command_to_text(cmd):
-    return quality_map.get(cmd, "Unknown")
+def convert_command_to_text(cmd_list):
+    text = []
+    for entry in cmd_list:
+        if entry in quality_map:
+            text.append(quality_map[entry])
+        else:
+            text.append(entry)  # fallback: gib original zurück
+    return text
 
 def convert_text_to_command(description, video_checkbox, audio_checkbox):
+    reverse_map = {v: k for k, v in quality_map.items()}
+
+    cmd_video = False
+    cmd_audio = False
+
     if video_checkbox == "yes":
-        if description == "Best":
-            cmd_video = "bestvideo"
-        if description == "Average":
-            cmd_video = "best"
-        if description == "Worst":
-            cmd_video = "worstvideo"
-    else:
-        cmd_video = False
+        if description in reverse_map:
+            cmd_video = reverse_map[description]
 
     if audio_checkbox == "yes":
         if description == "Best":
             cmd_audio = "bestaudio/best" #Not the best way, because by single video downloads there is noch fallback.
-        # No average, because "best" is already the best merged video and audio stream
-        if description == "Average":
-            cmd_audio = False
-        if description == "Worst":
+        elif description == "Average":
+            cmd_audio = False  # "Average" = nur Video
+        elif description == "Worst":
             cmd_audio = "worstaudio/worst"
-    else:
-        cmd_audio = False
-    """
-    if video_checkbox == "yes" and audio_checkbox == "yes":
-        cmd = cmd_video + "+" + cmd_audio
-        return cmd
-    elif video_checkbox == "yes" and audio_checkbox != "yes":
-        cmd = cmd_video
-    elif video_checkbox != "yes" and audio_checkbox == "yes":
-        cmd = cmd_audio
-    else:
-        return None
-        """
+
     return cmd_video, cmd_audio
 
 class Logger:
@@ -457,12 +447,11 @@ if __name__ == '__main__':
     socketio.run(app, host="0.0.0.0", port=5000, debug=True)
 
 
-# TODO: 6 Sekunden warten, in Logs bei Papa
 # TODO: QUEUE über query parameter an Website schicken, mit socket aktualisieren
 # TODO: Fallback merger mit time out, eigenes ffmpeg wird angestoßen
 # TODO: Sinnlose prints löschen
 # TODO: Only Audio/ Only Video Custom res und normal, normal worst, middle, best
 # TODO: REDME.MD aktualisieren wegen Qualitätseinstellungen und yt-dlp Library aktuell halte + automatischer Update und ffmpeg installieren
 # TODO: Bei merge auf gewähltes Dateiformat eingehen
-# TODO: Bei merge Fortschritsanzeige
+# TODO: Bei merge Fortschrittsanzeige
 # TODO: yt-dlp update erst nach einem Tag wieder

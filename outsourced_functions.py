@@ -64,15 +64,35 @@ def find_closest_resolution(video_height, video_formats):
     return closest["format_id"], closest["height"]
 
 def merging_video_audio(video_file, audio_file, output_file):
-    # There are sometimes problems with the merging of files. If updating yt-dlp dont help there is a
-    # code snipped to do the merging both video clips manually with ffmpeg.
+    # There are sometimes problems with the merging of files with yt-dlp, thats why I do it manually with ffmpeg.
     print("Merging")
+
+    # Check audio codec
+    result = subprocess.run([
+        "ffprobe", "-v", "error",
+        "-select_streams", "a:0",
+        "-show_entries", "stream=codec_name",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        audio_file
+    ], capture_output=True, text=True)
+
+    audio_codec = result.stdout.strip()
+    print(f"Audio codec detected: {audio_codec}")
+    print("Start merging.")
+
+    # 2. Audio-Option wählen
+    if audio_codec.lower() == "aac":
+        audio_option = "copy"
+        print("Only muxing, no re-encoding.")
+    else:
+        audio_option = "aac"
+        print(f"Re-encoding necessary.️")
     result = subprocess.run([
         'ffmpeg', '-y',
         '-i', video_file,
         '-i', audio_file,
         '-c:v', 'copy',
-        '-c:a', 'aac',
+        '-c:a', audio_option,
         output_file
     ])
 
@@ -83,7 +103,6 @@ def merging_video_audio(video_file, audio_file, output_file):
         print("Merging failed")
         print("Error:", result.stderr)
         return False
-
 
 def save(entry, video_data):
     with open("userdata.json", "r", encoding="utf-8") as file:
