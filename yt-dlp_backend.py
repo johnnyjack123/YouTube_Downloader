@@ -238,21 +238,28 @@ def download():
                 print(ydl_opts)
                 """
                 if custom_resolution == "yes":
-                    pass
+                    if video_checkbox and not audio_checkbox:
+                        video_input = 'bv[height<=' + video_resolution + ']/best'
+                    elif video_checkbox and audio_checkbox:
+                        video_input = 'bv[height<=' + video_resolution + ']'
+                        audio_input = 'ba[height<=' + video_resolution + ']/best' # TODO: Fallback dynamisch machen
+                    elif not video_checkbox and audio_checkbox:
+                        audio_input = 'ba[height<=' + video_resolution + ']/best'
+                    else:
+                        print("Error: No stream selected.")
                 else:
-                    if video_quality:
+                    if video_checkbox and not audio_checkbox:
                         video_input = video_quality
-                        video = True
-                    else:
-                        video = False
-                    if audio_quality:
+                    elif video_checkbox and audio_checkbox:
+                        video_input = video_quality
                         audio_input = audio_quality
-                        audio = True
+                    elif not video_checkbox and audio_checkbox:
+                        audio_input = audio_quality
                     else:
-                        audio = False
-                try:
+                        print("Error: No stream selected.")
 
-                    if video:
+                try:
+                    if video_checkbox:
                         ydl_opts_video = {
                             'format': video_input,
                             'outtmpl': os.path.join(download_folder, '%(title)s_video.%(ext)s'),
@@ -263,7 +270,7 @@ def download():
                             info_video = ydl.extract_info(video_url, download=True)
                             video_file = ydl.prepare_filename(info_video)  # returns the absolute path of the video file
 
-                    if audio:
+                    if audio_checkbox:
                         ydl_opts_audio = {
                             'format': audio_input,
                             'outtmpl': os.path.join(download_folder, '%(title)s_audio.%(ext)s'),
@@ -274,7 +281,7 @@ def download():
                             info_audio = ydl.extract_info(video_url, download=True)
                             audio_file = ydl.prepare_filename(info_audio)
 
-                    if video and audio:
+                    if video_checkbox and audio_checkbox:
                         output_file = video_file + "_merged." + video_container
                         result = merging_video_audio(video_file, audio_file, output_file)
 
