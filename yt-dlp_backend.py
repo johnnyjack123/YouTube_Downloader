@@ -490,5 +490,4 @@ if __name__ == '__main__':
 # TODO: README.MD aktualisieren wegen Qualitätseinstellungen und yt-dlp Library aktuell halte + automatischer Update und ffmpeg installieren
 # TODO: Bei merge auf gewähltes Dateiformat eingehen (testen)
 # TODO: Bei merge Fortschrittsanzeige
-# TODO: yt-dlp update erst nach einem Tag wieder
 # TODO: if only audio download, mp3 format

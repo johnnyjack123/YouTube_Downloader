@@ -64,10 +64,9 @@ def find_closest_resolution(video_height, video_formats):
     return closest["format_id"], closest["height"]
 
 def merging_video_audio(video_file, audio_file, output_file):
-    # There are sometimes problems with the merging of files with yt-dlp, thats why I do it manually with ffmpeg.
     print("Merging")
 
-    # Check audio codec
+    # --- Audio codec check ---
     result = subprocess.run([
         "ffprobe", "-v", "error",
         "-select_streams", "a:0",
@@ -75,24 +74,42 @@ def merging_video_audio(video_file, audio_file, output_file):
         "-of", "default=noprint_wrappers=1:nokey=1",
         audio_file
     ], capture_output=True, text=True)
-
     audio_codec = result.stdout.strip()
+
+    # --- Video codec check ---
+    result = subprocess.run([
+        "ffprobe", "-v", "error",
+        "-select_streams", "v:0",
+        "-show_entries", "stream=codec_name",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        video_file
+    ], capture_output=True, text=True)
+    video_codec = result.stdout.strip()
+
     print(f"Audio codec detected: {audio_codec}")
+    print(f"Video codec detected: {video_codec}")
     print("Start merging.")
 
-    # 2. Audio-Option wählen
-    if audio_codec.lower() == "aac":
-        audio_option = "copy"
-        print("Only muxing, no re-encoding.")
-    else:
-        audio_option = "aac"
-        print(f"Re-encoding necessary.️")
+    # --- Default: try copy ---
+    audio_option = "copy" if audio_codec.lower() == "aac" else "aac"
+    video_option = "copy"
+
+    # --- Container compatibility check ---
+    if output_file.lower().endswith(".mov"):
+        # MOV cannot handle VP9 or AV1 reliably
+        if video_codec.lower() in ["vp9", "av1"]:
+            print(f"Video codec {video_codec} not supported in MOV, re-encoding to H.264")
+            video_option = "libx264"
+        if audio_codec.lower() != "aac":
+            print(f"Audio codec {audio_codec} not supported in MOV, re-encoding to AAC")
+            audio_option = "aac"
+
     result = subprocess.run([
-        'ffmpeg', '-y',
-        '-i', video_file,
-        '-i', audio_file,
-        '-c:v', 'copy',
-        '-c:a', audio_option,
+        "ffmpeg", "-y",
+        "-i", video_file,
+        "-i", audio_file,
+        "-c:v", video_option,
+        "-c:a", audio_option,
         output_file
     ])
 
@@ -101,8 +118,8 @@ def merging_video_audio(video_file, audio_file, output_file):
         return True
     else:
         print("Merging failed")
-        print("Error:", result.stderr)
         return False
+
 
 def save(entry, video_data):
     with open("userdata.json", "r", encoding="utf-8") as file:
