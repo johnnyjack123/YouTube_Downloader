@@ -11,7 +11,7 @@ import logging
 import subprocess
 import sys
 from outsourced_functions import sort_formats, save, read, merging_video_audio
-from pathlib import Path
+from datetime import datetime, timedelta
 
 download_thread = False
 abort_flag = False
@@ -405,7 +405,6 @@ def convert_text_to_command(description, video_checkbox, audio_checkbox):
             cmd_audio = False  # "Average" = nur Video
         elif description == "Worst":
             cmd_audio = "worstaudio/worst"
-
     return cmd_video, cmd_audio
 
 class Logger:
@@ -439,14 +438,45 @@ def console(command):
     console_socket.append(command)
     return
 
+def console(command):
+    global console_socket
+    if command == "Client connected":
+        if "Client connected" in console_socket:
+            return
+    if command == "[yt-dlp]: Testing formats":
+        if "[yt-dlp]: Testing formats" in console_socket:
+            return
+    socketio.emit("console", command)
+    socketio.sleep(0)
+    console_socket.append(command)
+    return
+
 def open_browser():
     url = "http://127.0.0.1:5000"
     webbrowser.open(url)
     return
 
 def update_yt_dlp():
-    subprocess.run([sys.executable, "-m", "pip", "install", "-U", "yt-dlp"])
+    now = datetime.now()
 
+    last_update_str = read("yt-dlp_update_time")  # liest den String
+    last_update = None
+    if last_update_str:
+        try:
+            last_update = datetime.fromisoformat(last_update_str)
+        except ValueError:
+            last_update = None
+
+    if last_update:
+        if now - last_update < timedelta(days=1):
+            return
+        else:
+            subprocess.run([sys.executable, "-m", "pip", "install", "-U", "yt-dlp"])
+            save("yt-dlp_update_time", now.isoformat())
+    else:
+        subprocess.run([sys.executable, "-m", "pip", "install", "-U", "yt-dlp"])
+        save("yt-dlp_update_time", now.isoformat())
+    return
 
 if __name__ == '__main__':
     update_yt_dlp()
@@ -455,10 +485,10 @@ if __name__ == '__main__':
 
 
 # TODO: QUEUE über query parameter an Website schicken, mit socket aktualisieren
-# TODO: Fallback merger mit time out, eigenes ffmpeg wird angestoßen
 # TODO: Sinnlose prints löschen
-# TODO: Only Audio/ Only Video Custom res und normal, normal worst, middle, best
-# TODO: REDME.MD aktualisieren wegen Qualitätseinstellungen und yt-dlp Library aktuell halte + automatischer Update und ffmpeg installieren
-# TODO: Bei merge auf gewähltes Dateiformat eingehen
+# TODO: Only Audio/ Only Video Custom res und normal, normal worst, middle, best (testen, ob video und audio separat bei custom Download gehen)
+# TODO: README.MD aktualisieren wegen Qualitätseinstellungen und yt-dlp Library aktuell halte + automatischer Update und ffmpeg installieren
+# TODO: Bei merge auf gewähltes Dateiformat eingehen (testen)
 # TODO: Bei merge Fortschrittsanzeige
 # TODO: yt-dlp update erst nach einem Tag wieder
+# TODO: if only audio download, mp3 format
