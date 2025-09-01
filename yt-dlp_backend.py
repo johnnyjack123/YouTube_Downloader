@@ -2,7 +2,7 @@ import eventlet
 eventlet.monkey_patch()
 import yt_dlp
 from flask import Flask, request, render_template, redirect, url_for, jsonify
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, emit
 import threading
 import os
 import json
@@ -21,6 +21,8 @@ video_data = []
 
 state = True
 
+get_video_name_thread = False
+
 quality_map = {
     "bestvideo": "Best",
     "best": "Average",
@@ -30,6 +32,8 @@ quality_map = {
 video_quality_cmd = list(quality_map.keys())
 
 console_socket = []
+
+video_queue = []
 
 app = Flask(
     __name__,
@@ -44,7 +48,7 @@ def handle_connect():
     # TODO: Console in Array, Array wird immer bei reload mitgeschickt
     print("Client connected")
     console("Client connected")
-    #socketio.emit("console", "Client connected")
+    emit_queue()
 
 @app.route('/', methods=["GET", "POST"])
 def home():
@@ -75,12 +79,9 @@ def home():
 
     deafult_video_quality = data["video_quality"]
 
-    #if deafult_video_quality in video_quality:
     video_quality.remove(deafult_video_quality)
     video_quality.insert(0, deafult_video_quality)
     video_quality = convert_command_to_text(video_quality)
-        # Erzeuge neue video_quality-Liste basierend auf quality_map
-    #video_quality = [quality_map[cmd] for cmd in video_quality_cmd]
 
     deafult_video_resolution = data["video_resolution"]
     video_resolution.remove(deafult_video_resolution)
@@ -164,15 +165,10 @@ def video_settings():
     }
 
     video_data.append(entry)
-
-    socketio.emit('video_list', {
-        "queue": video_data,
-        "current": None  # hier gerade kein Wechsel, aktuelles Video bleibt unverändert
-    })
-    #print("Queue: " + str(video_data))
-    #print("URL: " + video_url)
+    emit_queue()
     logging.basicConfig(filename="debug.log", level=logging.DEBUG)
     logging.debug(video_data)
+
     if not is_downloading:
         print("start")
         start_download()
@@ -196,6 +192,9 @@ def download():
                 break  # Queue leer → beenden
 
             current_video = video_data.pop(0)
+            emit_queue()
+            logging.basicConfig(filename="debug.log", level=logging.DEBUG)
+            logging.debug(video_data)
 
             socketio.emit('video_list', {
                 "queue": video_data,
@@ -220,23 +219,6 @@ def download():
                 if not os.path.exists(download_folder):
                     return "Not valid folder"
 
-                """
-                # Den Pfad für den Download setzen
-                ydl_opts = {
-                    'format': video_resolution,
-                    'outtmpl': os.path.join(download_folder, '%(title)s.%(ext)s'),
-                    'merge_output_format': None,
-                    'progress_hooks': [progress_hook],
-                    'no_color': True, # Suppresses coloured output, as otherwise the numbers cannot be displayed correctly in the browser
-                    #'logger': Logger(),
-                    #'noplaylist': True,
-                    #'youtube_include_dash_manifest': True,  # erzwingt DASH-Include
-                    #'geo_bypass': True,  # falls länderspezifische Sperre
-                    #'youtube_skip_dash_manifest': False,
-                }
-
-                print(ydl_opts)
-                """
                 if custom_resolution == "yes":
                     if video_checkbox and not audio_checkbox:
                         video_input = 'bv[height<=' + video_resolution + ']/best'
@@ -263,7 +245,9 @@ def download():
                         ydl_opts_video = {
                             'format': video_input,
                             'outtmpl': os.path.join(download_folder, '%(title)s_video.%(ext)s'),
-                            'progress_hooks': [progress_hook]
+                            'progress_hooks': [progress_hook],
+                            'no_color': True, # Suppresses coloured output, as otherwise the numbers cannot be displayed correctly in the browser
+                            'logger': Logger()
                         }
 
                         with yt_dlp.YoutubeDL(ydl_opts_video) as ydl:
@@ -274,7 +258,9 @@ def download():
                         ydl_opts_audio = {
                             'format': audio_input,
                             'outtmpl': os.path.join(download_folder, '%(title)s_audio.%(ext)s'),
-                            'progress_hooks': [progress_hook]
+                            'progress_hooks': [progress_hook],
+                            'no_color': True, # Suppresses coloured output, as otherwise the numbers cannot be displayed correctly in the browser
+                            'logger': Logger()
                         }
 
                         with yt_dlp.YoutubeDL(ydl_opts_audio) as ydl:
@@ -356,7 +342,7 @@ def progress_hook(d):
     global abort_flag
 
     if abort_flag:
-        raise yt_dlp.utils.DownloadError("Download abgebrochen!")
+        raise yt_dlp.utils.DownloadError("Abort Download!")
 
     if d['status'] == 'downloading':
         percent = d.get('_percent_str', '0.0%').strip()
@@ -375,7 +361,7 @@ def progress_hook(d):
             'percent': '100%',
             'speed': '0',
             'eta': '0',
-            'message': '✅ Download abgeschlossen!'})
+            'message': '✅ Finished Download!'})
         print("Download abgeschlossen, wird nun verarbeitet...")
         socketio.sleep(0)
 
@@ -438,19 +424,31 @@ def console(command):
     console_socket.append(command)
     return
 
-def console(command):
-    global console_socket
-    if command == "Client connected":
-        if "Client connected" in console_socket:
-            return
-    if command == "[yt-dlp]: Testing formats":
-        if "[yt-dlp]: Testing formats" in console_socket:
-            return
-    socketio.emit("console", command)
+def emit_queue():
+    # Nur die Namen der Videos nehmen
+    queue_names = [video["video_name"] for video in video_data]
+    socketio.emit("queue", queue_names)
     socketio.sleep(0)
-    console_socket.append(command)
-    return
 
+"""
+
+def queue(video_name):
+    socketio.emit("queue", video_name)
+    socketio.sleep(0)
+
+def start_get_name(video_url):
+    global get_video_name_thread
+    if not get_video_name_thread:
+        get_video_name_thread = True
+        socketio.start_background_task(get_name, video_url)
+
+def get_name(video_url):
+    with yt_dlp.YoutubeDL() as ydl:
+        info_video = ydl.extract_info(video_url, download=False)
+        video_file = ydl.prepare_filename(info_video)
+        queue(video_file)
+        return
+"""
 def open_browser():
     url = "http://127.0.0.1:5000"
     webbrowser.open(url)

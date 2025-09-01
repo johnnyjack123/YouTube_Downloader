@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <title>YouTube Video Downloader</title>
     <link
-        href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.1/dist/darkly/bootstrap.min.css"
-        rel="stylesheet">
+            href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.1/dist/darkly/bootstrap.min.css"
+            rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 </head>
@@ -19,12 +19,13 @@
     </a>
     <p><strong>{{ download_folder }} </strong> is used</p>
 
-    <form action="{{ url_for('video_settings', download_folder=download_folder) }}" method="POST" class="mb-4 form-card">
+    <form action="{{ url_for('video_settings', download_folder=download_folder) }}" method="POST"
+          class="mb-4 form-card">
         <label class="form-label"><strong>YouTube Link</strong></label>
 
         <input type="text" name="video_url" class="form-control mb-3"
                placeholder="Insert YouTube Link" autocomplete="off">
-    <hr class="my-4">
+        <hr class="my-4">
 
         <label class="form-label"><strong>Video Quality Settings</strong></label>
         <select name="video_quality" class="form-select mb-3">
@@ -32,21 +33,21 @@
             <option value="{{ quality }}">{{ quality }}</option>
             {% endfor %}
         </select>
-{% if video_checkbox %}
-                        <input type="checkbox" name="video_checkbox" value="yes" class="form-check-input" id="videoCheckbox" checked>
-            {% else %}
+        {% if video_checkbox %}
+        <input type="checkbox" name="video_checkbox" value="yes" class="form-check-input" id="videoCheckbox" checked>
+        {% else %}
 
-            <input type="checkbox" name="video_checkbox" value="yes" class="form-check-input" id="videoCheckbox">
-            {% endif %}
-<label for="videoCheckbox" class="form-check-label">Download Video</label>
+        <input type="checkbox" name="video_checkbox" value="yes" class="form-check-input" id="videoCheckbox">
+        {% endif %}
+        <label for="videoCheckbox" class="form-check-label">Download Video</label>
         {% if audio_checkbox %}
-                        <input type="checkbox" name="audio_checkbox" value="yes" class="form-check-input" id="audioCheckbox" checked>
-            {% else %}
+        <input type="checkbox" name="audio_checkbox" value="yes" class="form-check-input" id="audioCheckbox" checked>
+        {% else %}
 
-            <input type="checkbox" name="audio_checkbox" value="yes" class="form-check-input" id="audioCheckbox">
-            {% endif %}
+        <input type="checkbox" name="audio_checkbox" value="yes" class="form-check-input" id="audioCheckbox">
+        {% endif %}
         <label for="audioCheckbox" class="form-check-label">Download Audio</label>
-    <hr class="my-4">
+        <hr class="my-4">
 
         <label class="form-label"><strong>Custom Video Resolution</strong></label>
         <select name="video_resolution" class="form-select mb-2">
@@ -56,7 +57,7 @@
         </select>
         <div class="form-check mb-3">
             {% if checkbox %}
-                        <input type="checkbox" name="custom_resolution" value="yes" class="form-check-input" id="customRes" checked>
+            <input type="checkbox" name="custom_resolution" value="yes" class="form-check-input" id="customRes" checked>
             {% else %}
 
             <input type="checkbox" name="custom_resolution" value="yes" class="form-check-input" id="customRes">
@@ -64,7 +65,7 @@
             <label for="customRes" class="form-check-label">Use custom resolution</label>
         </div>
 
-            <hr class="my-4">
+        <hr class="my-4">
 
 
         <label class="form-label"><strong>Video Container</strong></label>
@@ -74,7 +75,7 @@
             {% endfor %}
         </select>
 
-            <hr class="my-4">
+        <hr class="my-4">
 
 
         <input type="submit" class="btn btn-info w-100 btn-download" value="Start Download">
@@ -88,95 +89,83 @@
     </div>
     <p id="progress-text" class="mt-3">Nothing Downloaded...</p>
     <a id="cancel-download" href="{{ url_for('abort') }}"
-   class="btn btn-gradient mb-4" style="display: none;">
-   Cancel Download
-</a>
-<h3 class="mt-4">Download Queue</h3>
-<ul id="videoList" class="list-group mb-4"></ul>
+       class="btn btn-gradient mb-4" style="display: none;">
+        Cancel Download
+    </a>
 
-<h3>Console</h3>
-<div class="console-box">
+    <h3>Console</h3>
+    <div class="console-box">
 
-    {% for command in console_socket %}
-    <div class="text">
+        {% for command in console_socket %}
+        <div class="text">
     <span>
         <strong class="console-text">[console]:</strong> {{ command }}
     </span>
-</div>
-    {% endfor %}
-<div class="console" id="console">
+        </div>
+        {% endfor %}
+        <div class="console" id="console">
+        </div>
     </div>
+
+    <h3>Download Queue</h3>
+<ul id="queue" class="list-group mb-4"></ul>
+
 </div>
-</div>
+
 <script>
-    var socket = io();
-    var cancelLink = document.getElementById('cancel-download');
+var socket = io();
+var cancelLink = document.getElementById('cancel-download');
 
-    socket.on('progress', function (data) {
-        // Link anzeigen, sobald Download startet
-        if (cancelLink.style.display === 'none') {
-            cancelLink.style.display = 'inline-block';
-        }
-
-        if (data.message) {
-            document.getElementById('progress-text').textContent = data.message;
-            if (data.percent === '100%') {
-                document.getElementById('progress-bar').classList.remove('progress-bar-animated');
-                document.getElementById('progress-bar').classList.add('bg-success');
-
-                // Link wieder ausblenden
-                cancelLink.style.display = 'none';
-            }
-            return;
-        }
-
-        let percent = parseFloat(data.percent);
-        document.getElementById('progress-bar').style.width = percent + "%";
-        document.getElementById('progress-bar').textContent = data.percent;
-        document.getElementById('progress-text').textContent =
-            `Progress: ${data.percent} | Speed: ${data.speed} | ETA: ${data.eta}`;
-    });
-
-    socket.on('video_list', function(data) {
-    console.log("Aktuelle Videoliste:", data);
-
-    // aktuelles Video anzeigen
-    let current = data.current;
-    if (current) {
-        document.getElementById("progress-text").textContent =
-            `Aktuell: ${current.video_url} (${current.video_resolution}, ${current.video_container})`;
+socket.on('progress', function (data) {
+    if (cancelLink.style.display === 'none') {
+        cancelLink.style.display = 'inline-block';
     }
 
-    // Warteschlange anzeigen
-    let list = document.getElementById("videoList");
-    if (data.queue.length > 0) {
-    list.innerHTML = "";
-    data.queue.forEach(video => {
-        let li = document.createElement("li");
-        li.textContent = `${video.video_url} (${video.video_resolution}, ${video.video_container})`;
-        list.appendChild(li);
-    });
-}
+    if (data.message) {
+        document.getElementById('progress-text').textContent = data.message;
+        if (data.percent === '100%') {
+            document.getElementById('progress-bar').classList.remove('progress-bar-animated');
+            document.getElementById('progress-bar').classList.add('bg-success');
+            cancelLink.style.display = 'none';
+        }
+        return;
+    }
 
+    let percent = parseFloat(data.percent);
+    document.getElementById('progress-bar').style.width = percent + "%";
+    document.getElementById('progress-bar').textContent = data.percent;
+    document.getElementById('progress-text').textContent =
+        `Progress: ${data.percent} | Speed: ${data.speed} | ETA: ${data.eta}`;
 });
 
-const console = document.getElementById("console");
-
-    const createMessage = (msg) => {
-        const content = `
+// Console
+const consoleBox = document.getElementById("console");
+const createMessage = (msg) => {
+    const content = `
 <div class="text">
     <span>
         <strong class="console-text">[console]</strong>: ${msg}
     </span>
 </div>
 `;
-console.innerHTML += content;
+    consoleBox.innerHTML += content;
+};
 
-    };
+socket.on("console", (msg) => {
+    createMessage(msg);
+});
 
-    socket.on("console", (msg) => {
-        createMessage(msg);
+// Queue
+socket.on("queue", function(queue) {
+    let list = document.getElementById("queue");
+    list.innerHTML = "";
+    queue.forEach(videoName => {
+        let li = document.createElement("li");
+        li.textContent = videoName;
+        list.appendChild(li);
     });
+});
+
 </script>
 </body>
 </html>
