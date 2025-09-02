@@ -150,32 +150,32 @@ def video_settings():
     save("video_container", video_container)
     video_url = request.form.get("video_url")
 
-    # TODO: In Thread auslagern
-    #with yt_dlp.YoutubeDL({}) as ydl:
-    #    video_metadata = ydl.extract_info(video_url, download=False)
-    #    print("Titel:", video_metadata['title'])
+    found = next((v for v in video_data if v["video_url"] == video_url), None)
 
-    entry = {
-        "video_url": video_url,
-        "video_resolution": video_resolution,
-        "custom_resolution_checkbox": custom_resolution,
-        "video_quality": video_quality,
-        "audio_quality": audio_quality,
-        "video_container": video_container,
-        "video_name": "Loading name...",
-        "video_checkbox": video_checkbox,
-        "audio_checkbox": audio_checkbox
-    }
+    if found:
+        console("Video already in Queue.")
+    else:
+        entry = {
+            "video_url": video_url,
+            "video_resolution": video_resolution,
+            "custom_resolution_checkbox": custom_resolution,
+            "video_quality": video_quality,
+            "audio_quality": audio_quality,
+            "video_container": video_container,
+            "video_name": "Loading name...",
+            "video_checkbox": video_checkbox,
+            "audio_checkbox": audio_checkbox
+        }
 
-    video_data.append(entry)
-    start_get_name(video_url)
-    emit_queue()
-    logging.basicConfig(filename="debug.log", level=logging.DEBUG)
-    logging.debug(video_data)
+        video_data.append(entry)
+        start_get_name(video_url)
+        emit_queue()
+        logging.basicConfig(filename="debug.log", level=logging.DEBUG)
+        logging.debug(video_data)
 
-    if not is_downloading:
-        print("start")
-        start_download()
+        if not is_downloading:
+            print("start")
+            start_download()
     return redirect(url_for("home"))
 
 def start_download():
@@ -277,7 +277,6 @@ def download():
                             audio_file = ydl.prepare_filename(info_audio)
 
                         state_logger = True # So that logger knows, when new video starts, helps to display "Download" only once per video
-                        is_downloading = False
                         console("Done downloading. Processing.")
 
                     if video_checkbox and audio_checkbox:
@@ -296,6 +295,7 @@ def download():
                     print("Download failed:", e)
     finally:
         download_thread = False
+        is_downloading = False
 
 @app.route('/abort', methods=["GET", "POST"])
 def abort():
@@ -356,6 +356,7 @@ def progress_hook(d):
     global abort_flag
 
     if abort_flag:
+        console("Download aborted")
         raise yt_dlp.utils.DownloadError("Abort Download!")
 
     if d['status'] == 'downloading':
