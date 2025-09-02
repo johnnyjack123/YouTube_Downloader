@@ -10,7 +10,7 @@ import webbrowser
 import logging
 import subprocess
 import sys
-from outsourced_functions import sort_formats, save, read, merging_video_audio
+from outsourced_functions import save, read, merging_video_audio
 from datetime import datetime, timedelta
 
 download_thread = False
@@ -20,6 +20,9 @@ is_downloading = False
 video_data = []
 
 state = True
+
+state_logger = True
+download_type = ""
 
 get_video_name_thread = False
 
@@ -159,12 +162,13 @@ def video_settings():
         "video_quality": video_quality,
         "audio_quality": audio_quality,
         "video_container": video_container,
-        "video_name": "Test", #video_metadata["title"]
+        "video_name": "Loading name...",
         "video_checkbox": video_checkbox,
         "audio_checkbox": audio_checkbox
     }
 
     video_data.append(entry)
+    start_get_name(video_url)
     emit_queue()
     logging.basicConfig(filename="debug.log", level=logging.DEBUG)
     logging.debug(video_data)
@@ -181,8 +185,8 @@ def start_download():
         socketio.start_background_task(download)
 
 def download():
-    global download_thread, abort_flag, is_downloading, video_data, state
-    is_downloading = True
+    global download_thread, abort_flag, is_downloading, video_data, state, state_logger, download_type
+
     #abort_flag = False
     #print("download")
     console("Preparing download")
@@ -190,7 +194,7 @@ def download():
         while True:  # Endlosschleife, solange es noch Videos gibt
             if not video_data:
                 break  # Queue leer → beenden
-
+            is_downloading = True
             current_video = video_data.pop(0)
             emit_queue()
             logging.basicConfig(filename="debug.log", level=logging.DEBUG)
@@ -243,6 +247,7 @@ def download():
 
                 try:
                     if video_checkbox:
+                        download_type = "video"
                         ydl_opts_video = {
                             'format': video_input,
                             'outtmpl': os.path.join(download_folder, '%(title)s_video.%(ext)s'),
@@ -255,7 +260,10 @@ def download():
                             info_video = ydl.extract_info(video_url, download=True)
                             video_file = ydl.prepare_filename(info_video)  # returns the absolute path of the video file
 
+                    state_logger = True # So that logger knows, when new video starts, helps to display "Download" only once per video
+
                     if audio_checkbox:
+                        download_type = "audio"
                         ydl_opts_audio = {
                             'format': audio_input,
                             'outtmpl': os.path.join(download_folder, '%(title)s_audio.%(ext)s'),
@@ -268,21 +276,26 @@ def download():
                             info_audio = ydl.extract_info(video_url, download=True)
                             audio_file = ydl.prepare_filename(info_audio)
 
+                        state_logger = True # So that logger knows, when new video starts, helps to display "Download" only once per video
+                        is_downloading = False
+                        console("Done downloading. Processing.")
+
                     if video_checkbox and audio_checkbox:
+                        console("Merging...")
                         output_file = video_file + "_merged." + video_container
                         result = merging_video_audio(video_file, audio_file, output_file)
-
                         if result:
+                            console("Merging successful.")
                             os.remove(video_file)
                             os.remove(audio_file)
                         else:
-                            print("Merging failed. Downloaded video and audio are still storaged in your download folder")
+                            print("Merging failed. Downloaded video and audio are still storaged in your download folder.")
+                            console("Merging failed. Downloaded video and audio are still storaged in your download folder.")
 
                 except yt_dlp.utils.DownloadError as e:
                     print("Download failed:", e)
     finally:
         download_thread = False
-        is_downloading = False
 
 @app.route('/abort', methods=["GET", "POST"])
 def abort():
@@ -396,16 +409,23 @@ def convert_text_to_command(description, video_checkbox, audio_checkbox):
 
 class Logger:
     def debug(self, msg):
+        global is_downloading, state_logger, download_type
         if msg.startswith("[info] Testing format"):
             command = "[yt-dlp]: Testing formats"
-            print(command)
             console(command)
         elif msg.startswith("[download]"):
-            command = "Downloading"
+            if is_downloading:
+                if state_logger:
+                    command = "[" + download_type + "] Downloading..."
+                    state_logger = False
+                    console(command)
+                else:
+                    pass
+        elif msg.startswith("[youtube]"):
+            console("Downloading resources.") # TODO: noch machen, dass nur einmal pro Video geschrieben wird
         else:
             command = "[yt-dlp]" + msg
             console(command)
-
     def warning(self, msg):
         print("WARN:", msg)
         console(msg)
@@ -428,30 +448,11 @@ def console(command):
     return
 
 def emit_queue():
-    # Nur die Namen der Videos nehmen
+    # Take names of videos
     queue_names = [video["video_name"] for video in video_data]
     socketio.emit("queue", queue_names)
     socketio.sleep(0)
 
-"""
-
-def queue(video_name):
-    socketio.emit("queue", video_name)
-    socketio.sleep(0)
-
-def start_get_name(video_url):
-    global get_video_name_thread
-    if not get_video_name_thread:
-        get_video_name_thread = True
-        socketio.start_background_task(get_name, video_url)
-
-def get_name(video_url):
-    with yt_dlp.YoutubeDL() as ydl:
-        info_video = ydl.extract_info(video_url, download=False)
-        video_file = ydl.prepare_filename(info_video)
-        queue(video_file)
-        return
-"""
 def open_browser():
     url = "http://127.0.0.1:5000"
     webbrowser.open(url)
@@ -479,14 +480,34 @@ def update_yt_dlp():
         save("yt-dlp_update_time", now.isoformat())
     return
 
+def update_title_in_queue(title, video_url):
+    if video_data:
+        if title:
+            video = next((v for v in video_data if v["video_url"] == video_url), None)
+            if video:
+                video["video_name"] = title
+                emit_queue()
+
+def get_name(video_url):
+    with yt_dlp.YoutubeDL({}) as ydl:
+        video_metadata = ydl.extract_info(video_url, download=False)
+        print("Titel:", video_metadata['title'])
+        update_title_in_queue(video_metadata['title'], video_url)
+
+def start_get_name(video_url):
+    t = threading.Thread(target=get_name, args=(video_url,))
+    t.start()
+
+
 if __name__ == '__main__':
     update_yt_dlp()
-    #open_browser()
+    # open_browser()
     socketio.run(app, host="0.0.0.0", port=5000, debug=True)
-
 
 # TODO: Sinnlose prints löschen
 # TODO: Only Audio/ Only Video Custom res und normal, normal worst, middle, best (testen, ob video und audio separat bei custom Download gehen)
 # TODO: README.MD aktualisieren wegen Qualitätseinstellungen und yt-dlp Library aktuell halte + automatischer Update und ffmpeg installieren
 # TODO: Bei merge Fortschrittsanzeige
 # TODO: if only audio download, mp3 format
+# TODO: test, ob ffmpeg installiert ist
+# TODO: Sicherstellen, das video nicht zwei mal in video_data ist
