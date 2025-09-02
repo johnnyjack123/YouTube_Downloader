@@ -226,9 +226,10 @@ def download():
                         video_input = 'bv[height<=' + video_resolution + ']'
                         audio_input = 'ba[height<=' + video_resolution + ']/best' # TODO: Fallback dynamisch machen
                     elif not video_checkbox and audio_checkbox:
-                        audio_input = 'ba[height<=' + video_resolution + ']/best'
+                        #audio_input = 'ba[height<=' + video_resolution + ']'
+                        audio_input = 'bestaudio'
                     else:
-                        print("Error: No stream selected.")
+                        console("[Error] No stream selected.")
                 else:
                     if video_checkbox and not audio_checkbox:
                         video_input = video_quality
@@ -238,7 +239,7 @@ def download():
                     elif not video_checkbox and audio_checkbox:
                         audio_input = audio_quality
                     else:
-                        print("Error: No stream selected.")
+                        console("[Error] No stream selected.")
 
                 try:
                     if video_checkbox:
@@ -399,6 +400,8 @@ class Logger:
             command = "[yt-dlp]: Testing formats"
             print(command)
             console(command)
+        elif msg.startswith("[download]"):
+            command = "Downloading"
         else:
             command = "[yt-dlp]" + msg
             console(command)
@@ -416,7 +419,7 @@ def console(command):
     if command == "Client connected":
         if "Client connected" in console_socket:
             return
-    if command == "[yt-dlp]: Testing formats":
+    elif command == "[yt-dlp]: Testing formats":
         if "[yt-dlp]: Testing formats" in console_socket:
             return
     socketio.emit("console", command)
@@ -482,10 +485,8 @@ if __name__ == '__main__':
     socketio.run(app, host="0.0.0.0", port=5000, debug=True)
 
 
-# TODO: QUEUE über query parameter an Website schicken, mit socket aktualisieren
 # TODO: Sinnlose prints löschen
 # TODO: Only Audio/ Only Video Custom res und normal, normal worst, middle, best (testen, ob video und audio separat bei custom Download gehen)
 # TODO: README.MD aktualisieren wegen Qualitätseinstellungen und yt-dlp Library aktuell halte + automatischer Update und ffmpeg installieren
-# TODO: Bei merge auf gewähltes Dateiformat eingehen (testen)
 # TODO: Bei merge Fortschrittsanzeige
 # TODO: if only audio download, mp3 format
