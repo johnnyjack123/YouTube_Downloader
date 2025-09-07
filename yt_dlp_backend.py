@@ -10,7 +10,7 @@ import webbrowser
 import logging
 import subprocess
 import sys
-from outsourced_functions import save, read, merging_video_audio, convert_audio_to_mp3
+from outsourced_functions import save, read, merging_video_audio, convert_audio_to_mp3, check_for_userdata
 from datetime import datetime, timedelta
 
 download_thread = False
@@ -56,22 +56,6 @@ def handle_connect():
 @app.route('/', methods=["GET", "POST"])
 def home():
     global video_quality_cmd
-    deafult_download_folder = os.path.join(os.path.expanduser("~"), "Videos")
-
-    deafult_content = {
-        "download_folder": deafult_download_folder,
-        "video_quality": "best",
-        "video_resolution": "1080",
-        "video_resolution_command": "bv[height<=1080]+ba[height<=1080]",
-        "video_container": "mp4",
-        "checkbox": False,
-        "video_checkbox": True,
-        "audio_checkbox": True
-        }
-
-    if not os.path.exists("userdata.json"):
-        with open("userdata.json", "w", encoding="utf-8") as f:
-            json.dump(deafult_content, f, indent=4, ensure_ascii=False)
 
     video_quality = ["bestvideo", "best", "worstvideo"]
     video_resolution = ["720", "1080", "1920", "1440", "2160"]
@@ -519,16 +503,14 @@ def start_get_name(video_url):
     t = threading.Thread(target=get_name, args=(video_url,))
     t.start()
 
-
 if __name__ == '__main__':
+    check_for_userdata()
     update_yt_dlp()
     # open_browser()
     socketio.run(app, host="0.0.0.0", port=5000, debug=True)
 
 # TODO: Sinnlose prints löschen
-# TODO: Only Audio/ Only Video Custom res und normal, normal worst, middle, best (testen, ob video und audio separat bei custom Download gehen)
 # TODO: README.MD aktualisieren wegen Qualitätseinstellungen und yt-dlp Library aktuell halte + automatischer Update und ffmpeg installieren
 # TODO: Bei merge Fortschrittsanzeige
-# TODO: if only audio download, mp3 format
 # TODO: test, ob ffmpeg installiert ist
-# TODO: HOT: bei only audio & mp3 konvertieren
+# TODO: Audo Updater wie bei Anton

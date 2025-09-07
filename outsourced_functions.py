@@ -186,4 +186,21 @@ def read(entry):
             video_data = data[entry]
             return video_data
 
+def check_for_userdata():
+    deafult_download_folder = os.path.join(os.path.expanduser("~"), "Videos")
 
+    deafult_content = {
+        "download_folder": deafult_download_folder,
+        "video_quality": "best",
+        "video_resolution": "1080",
+        "video_resolution_command": "bv[height<=1080]+ba[height<=1080]",
+        "video_container": "mp4",
+        "custom_resolution_checkbox": False,
+        "video_checkbox": True,
+        "audio_checkbox": True,
+        "yt-dlp_update_time": "2025-09-06T17:40:36.348409"
+    }
+
+    if not os.path.exists("userdata.json"):
+        with open("userdata.json", "w", encoding="utf-8") as f:
+            json.dump(deafult_content, f, indent=4, ensure_ascii=False)
