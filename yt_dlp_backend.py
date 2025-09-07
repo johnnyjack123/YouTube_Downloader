@@ -64,9 +64,10 @@ def home():
         "video_resolution": "1080",
         "video_resolution_command": "bv[height<=1080]+ba[height<=1080]",
         "video_container": "mp4",
-        "checkbox": False,
+        "custom_resolution_checkbox": False,
         "video_checkbox": True,
-        "audio_checkbox": True
+        "audio_checkbox": True,
+        "yt-dlp_update_time": "2025-09-06T17:40:36.348409"
         }
 
     if not os.path.exists("userdata.json"):
