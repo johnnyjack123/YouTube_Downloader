@@ -166,6 +166,39 @@ socket.on("queue", function(queue) {
     });
 });
 
+//mp3
+document.addEventListener("DOMContentLoaded", () => {
+    const audioCheckbox = document.getElementById("audioCheckbox");
+    const videoCheckbox = document.getElementById("videoCheckbox");
+    const containerSelect = document.querySelector("select[name='video_container']");
+
+    const mp3Option = document.createElement("option");
+    mp3Option.value = "mp3";
+    mp3Option.textContent = "mp3";
+
+    function updateContainers() {
+        if (audioCheckbox.checked && !videoCheckbox.checked) {
+            // mp3 hinzufügen, falls nicht schon drin
+            if (![...containerSelect.options].some(opt => opt.value === "mp3")) {
+                containerSelect.appendChild(mp3Option);
+            }
+        } else {
+            // mp3 entfernen
+            [...containerSelect.options].forEach(opt => {
+                if (opt.value === "mp3") opt.remove();
+            });
+        }
+    }
+
+    // Initial check
+    updateContainers();
+
+    // Event Listener
+    audioCheckbox.addEventListener("change", updateContainers);
+    videoCheckbox.addEventListener("change", updateContainers);
+});
+
+
 </script>
 </body>
 </html>

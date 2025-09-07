@@ -10,7 +10,7 @@ import webbrowser
 import logging
 import subprocess
 import sys
-from outsourced_functions import save, read, merging_video_audio
+from outsourced_functions import save, read, merging_video_audio, convert_audio_to_mp3
 from datetime import datetime, timedelta
 
 download_thread = False
@@ -129,12 +129,14 @@ def video_settings():
         video_quality = request.form.get("video_quality")
 
         video_quality, audio_quality = convert_text_to_command(video_quality, video_checkbox, audio_checkbox)
-
+        print("Audio Quality: " + audio_quality)
         save("custom_resolution_checkbox", False)
 
         #video_resolution = video_quality + "+" + audio_quality
         video_resolution = False
-        save("video_quality", video_quality)
+        if video_quality:
+            save("video_quality", video_quality)
+        logging.debug(f"Saving video_quality = {video_quality!r} (type={type(video_quality)})")
 
     if video_checkbox == "yes":
         save("video_checkbox", True)
@@ -147,7 +149,8 @@ def video_settings():
         save("audio_checkbox", False)
 
     video_container = request.form.get("video_container")
-    save("video_container", video_container)
+    if not video_container == "mp3":
+        save("video_container", video_container)
     video_url = request.form.get("video_url")
 
     found = next((v for v in video_data if v["video_url"] == video_url), None)
@@ -172,6 +175,7 @@ def video_settings():
         emit_queue()
         logging.basicConfig(filename="debug.log", level=logging.DEBUG)
         logging.debug(video_data)
+        logging.debug(f"Saving video_quality = {video_quality!r} (type={type(video_quality)})")
 
         if not is_downloading:
             print("start")
@@ -269,7 +273,7 @@ def download():
                             'outtmpl': os.path.join(download_folder, '%(title)s_audio.%(ext)s'),
                             'progress_hooks': [progress_hook],
                             'no_color': True, # Suppresses coloured output, as otherwise the numbers cannot be displayed correctly in the browser
-                            'logger': Logger()
+                            #'logger': Logger()
                         }
 
                         with yt_dlp.YoutubeDL(ydl_opts_audio) as ydl:
@@ -290,6 +294,19 @@ def download():
                         else:
                             print("Merging failed. Downloaded video and audio are still storaged in your download folder.")
                             console("Merging failed. Downloaded video and audio are still storaged in your download folder.")
+
+                    elif not video_checkbox and audio_checkbox and video_container == "mp3": # Exception for mp3 Format, so you can download for example music as a mp3 file
+                        console("Convert audio in mp3...")
+                        output_file = audio_file + "_merged." + video_container
+                        result = convert_audio_to_mp3(audio_file, output_file)
+                        if result:
+                            console("Merging successful.")
+                            os.remove(audio_file)
+                        else:
+                            print(
+                                "Merging failed. Downloaded video and audio are still storaged in your download folder.")
+                            console(
+                                "Merging failed. Downloaded video and audio are still storaged in your download folder.")
 
                 except yt_dlp.utils.DownloadError as e:
                     print("Download failed:", e)
@@ -403,7 +420,10 @@ def convert_text_to_command(description, video_checkbox, audio_checkbox):
         if description == "Best":
             cmd_audio = "bestaudio/best" #Not the best way, because by single video downloads there is noch fallback.
         elif description == "Average":
-            cmd_audio = False  # "Average" = nur Video
+            if not video_checkbox == "yes" and audio_checkbox == "yes":
+                cmd_audio = "bestaudio/best"
+            else:
+                cmd_audio = False  # "Average" = nur Video
         elif description == "Worst":
             cmd_audio = "worstaudio/worst"
     return cmd_video, cmd_audio
@@ -511,4 +531,4 @@ if __name__ == '__main__':
 # TODO: Bei merge Fortschrittsanzeige
 # TODO: if only audio download, mp3 format
 # TODO: test, ob ffmpeg installiert ist
-# TODO: Sicherstellen, das video nicht zwei mal in video_data ist
+# TODO: HOT: bei only audio & mp3 konvertieren

@@ -121,6 +121,51 @@ def merging_video_audio(video_file, audio_file, output_file):
         print("Merging failed")
         return False
 
+def convert_audio_to_mp3(input_file, output_file):
+    print("Converting audio to MP3...")
+
+    # --- Check codec ---
+    result = subprocess.run([
+        "ffprobe", "-v", "error",
+        "-select_streams", "a:0",
+        "-show_entries", "stream=codec_name",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        input_file
+    ], capture_output=True, text=True)
+
+    audio_codec = result.stdout.strip().lower()
+    print(f"Detected audio codec: {audio_codec}")
+
+    # --- Decide conversion method ---
+    if audio_codec == "mp3":
+        # Already MP3 → just copy
+        cmd = [
+            "ffmpeg", "-y",
+            "-i", input_file,
+            "-c:a", "copy",
+            output_file
+        ]
+        print("Audio is already MP3, using stream copy.")
+    else:
+        # Not MP3 → re-encode to MP3
+        cmd = [
+            "ffmpeg", "-y",
+            "-i", input_file,
+            "-c:a", "libmp3lame",  # best MP3 encoder
+            "-b:a", "192k",        # standard bitrate
+            output_file
+        ]
+        print(f"Re-encoding audio ({audio_codec}) to MP3.")
+
+    # --- Run conversion ---
+    result = subprocess.run(cmd)
+
+    if result.returncode == 0:
+        print(f"Audio successfully saved as {output_file}")
+        return True
+    else:
+        print("Audio conversion failed")
+        return False
 
 def save(entry, video_data):
     with open("userdata.json", "r", encoding="utf-8") as file:
