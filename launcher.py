@@ -6,7 +6,18 @@ import os
 import shutil
 import sys
 
-python_script = "yt_dlp_backend.py"
+# Basisverzeichnis = Ordner, wo der Launcher selbst liegt
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+python_script = os.path.join(BASE_DIR, "program_files", "yt_dlp_backend.py")
+url_version = "https://raw.githubusercontent.com/johnnyjack123/YouTube_Downloader/refs/heads/master/program_files/version.txt"
+new_version = os.path.join(BASE_DIR, "tmp", "newest_version.txt")
+old_version = os.path.join(BASE_DIR, "program_files", "version.txt")
+
+branch = "master"
+repo = "johnnyjack123/YouTube_Downloader"
+folder_to_extract = "program_files"
+target_folder = os.path.join(BASE_DIR, "program_files")
 
 def check_internet_connection(url="https://www.google.com", timeout=5):
     try:
@@ -17,10 +28,6 @@ def check_internet_connection(url="https://www.google.com", timeout=5):
 
 def update():
     print("Updating...")
-    branch = "Master"
-    repo = "johnnyjack123/YouTube_Downloader"
-    folder_to_extract = "program_files"
-    target_folder = "./program_files"
 
     # 1. ZIP vom GitHub-Branch herunterladen
     zip_url = f"https://github.com/{repo}/archive/refs/heads/{branch}.zip"
@@ -66,24 +73,24 @@ def update():
 
 def launch_app():
     global python_script
-    subprocess.run(["python", python_script], shell=True)
+    subprocess.run([sys.executable, "-m", "program_files.yt_dlp_backend"], cwd=BASE_DIR)
+
 
 def check_for_updates():
-    url_version = "https://raw.githubusercontent.com/johnnyjack123/dot-matrix-info-display/refs/heads/master/Dot-Matrix_Panel/version.txt"
-    path_version = r"tmp\newest_version.txt"
-    folder = os.path.dirname(path_version)
+    global new_version, old_version
+    folder = os.path.dirname(new_version)
     if not os.path.exists(folder):
         os.makedirs(folder)
     response_version = requests.get(url_version)
 
     if response_version.status_code == 200:
-        with open(path_version, "wb") as file:
+        with open(new_version, "wb") as file:
             file.write(response_version.content)
             print("File stored in /tmp")
         try:
-            with open("Dot-Matrix_Panel/version.txt", "r", encoding="utf-8") as file:
+            with open(old_version, "r", encoding="utf-8") as file:
                 program_version = float(file.read().strip())
-            with open("tmp/newest_version.txt", "r", encoding="utf-8") as file:
+            with open(new_version, "r", encoding="utf-8") as file:
                 new_version = float(file.read().strip())
             if new_version > program_version:
                 update()
