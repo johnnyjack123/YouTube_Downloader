@@ -236,6 +236,7 @@ def download():
                 try:
                     if video_checkbox:
                         download_type = "video"
+                        console(f"[{download_type}] Preparing to download {download_type}.")
                         ydl_opts_video = {
                             'format': video_input,
                             'outtmpl': os.path.join(download_folder, '%(title)s_video.%(ext)s'),
@@ -248,16 +249,19 @@ def download():
                             info_video = ydl.extract_info(video_url, download=True)
                             video_file = ydl.prepare_filename(info_video)  # returns the absolute path of the video file
 
-                    state_logger = True # So that logger knows, when new video starts, helps to display "Download" only once per video
+                        state_logger = True # So that logger knows, when new video starts, helps to display "Download" only once per video
+                        console(f"Done downloading {download_type}.")
+
 
                     if audio_checkbox:
                         download_type = "audio"
+                        console(f"[{download_type}] Preparing to download {download_type}.")
                         ydl_opts_audio = {
                             'format': audio_input,
                             'outtmpl': os.path.join(download_folder, '%(title)s_audio.%(ext)s'),
                             'progress_hooks': [progress_hook],
                             'no_color': True, # Suppresses coloured output, as otherwise the numbers cannot be displayed correctly in the browser
-                            #'logger': Logger()
+                            'logger': Logger()
                         }
 
                         with yt_dlp.YoutubeDL(ydl_opts_audio) as ydl:
@@ -265,10 +269,10 @@ def download():
                             audio_file = ydl.prepare_filename(info_audio)
 
                         state_logger = True # So that logger knows, when new video starts, helps to display "Download" only once per video
-                        console("Done downloading. Processing.")
+                        console(f"Done downloading {download_type}.")
 
                     if video_checkbox and audio_checkbox:
-                        console("Merging...")
+                        console("Merging video and audio stream.")
                         output_file = video_file + "_merged." + video_container
                         result = merging_video_audio(video_file, audio_file, output_file)
                         if result:
