@@ -10,10 +10,13 @@ import webbrowser
 import logging
 import subprocess
 import sys
-from program_files.outsourced_functions import save, read, merging_video_audio, convert_audio_to_mp3, check_for_userdata
+from program_files.outsourced_functions import save, read, merging_video_audio, convert_audio_to_mp3, check_for_userdata, ensure_ffmpeg
 from datetime import datetime, timedelta
+import shutil
 
-userdata_file = "../userdata.json"
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Directory of this file
+userdata_file = os.path.join(BASE_DIR, "..", "userdata.json")
 
 download_thread = False
 abort_flag = False
@@ -252,8 +255,7 @@ def download():
                             video_file = ydl.prepare_filename(info_video)  # returns the absolute path of the video file
 
                         state_logger = True # So that logger knows, when new video starts, helps to display "Download" only once per video
-                        console(f"Done downloading {download_type}.")
-
+                        console(f"[{download_type}]Done downloading {download_type}.")
 
                     if audio_checkbox:
                         download_type = "audio"
@@ -271,7 +273,7 @@ def download():
                             audio_file = ydl.prepare_filename(info_audio)
 
                         state_logger = True # So that logger knows, when new video starts, helps to display "Download" only once per video
-                        console(f"Done downloading {download_type}.")
+                        console(f"[{download_type}]Done downloading {download_type}.")
 
                     if video_checkbox and audio_checkbox:
                         console("Merging video and audio stream.")
@@ -357,7 +359,7 @@ def change_download_folder():
 @app.route('/previous_folder', methods=["GET", "POST"])
 def previous_folder():
     path = request.args.get("path")
-    new_path = path.rsplit("\\", 1)[0] # TODO: mit os machen
+    new_path = os.path.dirname(path) #
     return redirect(url_for("choose_download_folder_page", path=new_path))
 
 def progress_hook(d):
@@ -511,13 +513,19 @@ def start_get_name(video_url):
     t.start()
 
 if __name__ == '__main__':
-    check_for_userdata()
-    update_yt_dlp()
-    # open_browser()
-    socketio.run(app, host="0.0.0.0", port=5000, debug=True)
+    result = ensure_ffmpeg()
+    if result == "run":
+        check_for_userdata()
+        update_yt_dlp()
+        # open_browser()
+        socketio.run(app, host="0.0.0.0", port=5000, debug=True)
+    elif result == "restart":
+        print("Please restart this python script and the whole command line.")
+    else:
+        print("Error. Either ffmpeg is not installed or not entered in the system environment variables.")
 
 # TODO: Sinnlose prints löschen
 # TODO: README.MD aktualisieren wegen Qualitätseinstellungen und yt-dlp Library aktuell halte + automatischer Update und ffmpeg installieren
 # TODO: Bei merge Fortschrittsanzeige
 # TODO: test, ob ffmpeg installiert ist
-# TODO: Audo Updater wie bei Anton
+# TODO: Option für Autoupdate

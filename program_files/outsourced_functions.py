@@ -3,6 +3,11 @@ import json
 import subprocess
 import os
 import threading
+import shutil
+import sys
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Ordner, wo die aktuelle Datei liegt
+userdata_file = os.path.join(BASE_DIR, "..", "userdata.json")
 
 def sort_formats(video_url, video_resolution):
     # Check if quality is available
@@ -168,20 +173,20 @@ def convert_audio_to_mp3(input_file, output_file):
         return False
 
 def save(entry, video_data):
-    with open("../userdata.json", "r", encoding="utf-8") as file:
+    with open(userdata_file, "r", encoding="utf-8") as file:
         data = json.load(file)
         data[entry] = video_data
-    with open("../userdata.json", "w", encoding="utf-8") as file:
+    with open(userdata_file, "w", encoding="utf-8") as file:
         json.dump(data, file, ensure_ascii=False, indent=4)
     return
 
 def read(entry):
     if entry == "file":
-        with open("../userdata.json", "r", encoding="utf-8") as file:
+        with open(userdata_file, "r", encoding="utf-8") as file:
             data = json.load(file)
             return data
     elif entry:
-        with open("../userdata.json", "r", encoding="utf-8") as file:
+        with open(userdata_file, "r", encoding="utf-8") as file:
             data = json.load(file)
             video_data = data[entry]
             return video_data
@@ -201,6 +206,43 @@ def check_for_userdata():
         "yt-dlp_update_time": "2025-09-06T17:40:36.348409"
     }
 
-    if not os.path.exists("../userdata.json"):
-        with open("../userdata.json", "w", encoding="utf-8") as f:
+    if not os.path.exists(userdata_file):
+        with open(userdata_file, "w", encoding="utf-8") as f:
             json.dump(deafult_content, f, indent=4, ensure_ascii=False)
+
+def ensure_ffmpeg():
+    if shutil.which("ffmpeg") is not None:
+        print("ffmpeg found.")
+        return "run"
+    else:
+        print("ffmpeg is not installed. It is necessary to have ffmpeg installed on your computer so the downloaded video and audio stream can merged together")
+        install = input("Do you wanna install ffmpeg now? Type [yes] or [no]. You also can manually download ffmpeg from the official ffmpeg website: https://ffmpeg.org/download.html . You are not able to use this tool without ffmpeg installed.")
+        if install == "yes":
+                try:
+                    if sys.platform == "win32":
+                        subprocess.run(
+                            ["winget", "install", "-e", "--id", "Gyan.FFmpeg"],
+                            check=True
+                        )
+                        print("ffmpeg successfully installed.")
+                        return "restart"
+                    elif sys.platform == "linux":
+                        subprocess.run(
+                            ["sudo", "apt", "install", "-y", "ffmpeg"],
+                            check=True
+                        )
+                        return "restart"
+                    elif sys.platform == "darwin":
+                        subprocess.run(
+                            ["brew", "install", "ffmpeg"],
+                            check=True
+                        )
+                        return "restart"
+                    else:
+                        print("OS not found. Please install ffmpeg manually from the official website: https://ffmpeg.org/download.html")
+                        return False
+                except Exception as e:
+                    print("Installation failed:", e)
+                    return False
+        else:
+            return False
