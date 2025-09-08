@@ -168,20 +168,20 @@ def convert_audio_to_mp3(input_file, output_file):
         return False
 
 def save(entry, video_data):
-    with open("userdata.json", "r", encoding="utf-8") as file:
+    with open("../userdata.json", "r", encoding="utf-8") as file:
         data = json.load(file)
         data[entry] = video_data
-    with open("userdata.json", "w", encoding="utf-8") as file:
+    with open("../userdata.json", "w", encoding="utf-8") as file:
         json.dump(data, file, ensure_ascii=False, indent=4)
     return
 
 def read(entry):
     if entry == "file":
-        with open("userdata.json", "r", encoding="utf-8") as file:
+        with open("../userdata.json", "r", encoding="utf-8") as file:
             data = json.load(file)
             return data
     elif entry:
-        with open("userdata.json", "r", encoding="utf-8") as file:
+        with open("../userdata.json", "r", encoding="utf-8") as file:
             data = json.load(file)
             video_data = data[entry]
             return video_data
@@ -201,6 +201,6 @@ def check_for_userdata():
         "yt-dlp_update_time": "2025-09-06T17:40:36.348409"
     }
 
-    if not os.path.exists("userdata.json"):
-        with open("userdata.json", "w", encoding="utf-8") as f:
+    if not os.path.exists("../userdata.json"):
+        with open("../userdata.json", "w", encoding="utf-8") as f:
             json.dump(deafult_content, f, indent=4, ensure_ascii=False)

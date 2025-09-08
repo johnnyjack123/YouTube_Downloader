@@ -1,8 +1,8 @@
 import eventlet
 eventlet.monkey_patch()
 import yt_dlp
-from flask import Flask, request, render_template, redirect, url_for, jsonify
-from flask_socketio import SocketIO, emit
+from flask import Flask, request, render_template, redirect, url_for
+from flask_socketio import SocketIO
 import threading
 import os
 import json
@@ -10,8 +10,10 @@ import webbrowser
 import logging
 import subprocess
 import sys
-from outsourced_functions import save, read, merging_video_audio, convert_audio_to_mp3, check_for_userdata
+from program_files.outsourced_functions import save, read, merging_video_audio, convert_audio_to_mp3, check_for_userdata
 from datetime import datetime, timedelta
+
+userdata_file = "../userdata.json"
 
 download_thread = False
 abort_flag = False
@@ -343,10 +345,11 @@ def search_download_folder(folder, path):
 
 @app.route('/change_download_folder', methods=["GET", "POST"])
 def change_download_folder():
-    with open("userdata.json", "r", encoding="utf-8") as file:
+    global userdata_file
+    with open(userdata_file, "r", encoding="utf-8") as file:
         data = json.load(file)
         data["download_folder"] = request.args.get("path")
-    with open("userdata.json", "w", encoding="utf-8") as file:
+    with open(userdata_file, "w", encoding="utf-8") as file:
         json.dump(data, file, ensure_ascii=False, indent=4)
         return redirect(url_for("home"))
 
