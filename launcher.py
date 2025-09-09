@@ -5,7 +5,7 @@ import io
 import os
 import shutil
 import sys
-from program_files.outsourced_functions import read
+from program_files.outsourced_functions import read, check_for_userdata
 # Basisverzeichnis = Ordner, wo der Launcher selbst liegt
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -102,7 +102,11 @@ def check_for_updates():
             update()
     else:
         print("Program is unreachable")
+
+check_for_userdata()
+
 data = read("file")
+
 if data["auto_update"] == "yes":
     if check_internet_connection():
         print("Internet connection")

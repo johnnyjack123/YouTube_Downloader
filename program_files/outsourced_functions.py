@@ -191,10 +191,10 @@ def read(entry):
             return video_data
 
 def check_for_userdata():
-    deafult_download_folder = os.path.join(os.path.expanduser("~"), "Videos")
+    default_download_folder = os.path.join(os.path.expanduser("~"), "Videos")
 
-    deafult_content = {
-        "download_folder": deafult_download_folder,
+    default_content = {
+        "download_folder": default_download_folder,
         "video_quality": "best",
         "video_resolution": "1080",
         "video_resolution_command": "bv[height<=1080]+ba[height<=1080]",
@@ -202,12 +202,14 @@ def check_for_userdata():
         "custom_resolution_checkbox": False,
         "video_checkbox": True,
         "audio_checkbox": True,
-        "yt-dlp_update_time": "2025-09-06T17:40:36.348409"
+        "yt-dlp_update_time": "2025-09-06T17:40:36.348409",
+        "open_browser": "yes",
+        "auto_update": "yes"
     }
 
     if not os.path.exists(userdata_file):
         with open(userdata_file, "w", encoding="utf-8") as f:
-            json.dump(deafult_content, f, indent=4, ensure_ascii=False)
+            json.dump(default_content, f, indent=4, ensure_ascii=False)
 
 def ensure_ffmpeg():
     if shutil.which("ffmpeg") is not None:
