@@ -68,19 +68,19 @@ def home():
     data = read("file")
     download_folder = data["download_folder"]
 
-    deafult_video_quality = data["video_quality"]
+    default_video_quality = data["video_quality"]
 
-    video_quality.remove(deafult_video_quality)
-    video_quality.insert(0, deafult_video_quality)
+    video_quality.remove(default_video_quality)
+    video_quality.insert(0, default_video_quality)
     video_quality = convert_command_to_text(video_quality)
 
-    deafult_video_resolution = data["video_resolution"]
-    video_resolution.remove(deafult_video_resolution)
-    video_resolution.insert(0, deafult_video_resolution)
+    default_video_resolution = data["video_resolution"]
+    video_resolution.remove(default_video_resolution)
+    video_resolution.insert(0, default_video_resolution)
 
-    deafult_video_container = data["video_container"]
-    video_container.remove(deafult_video_container)
-    video_container.insert(0, deafult_video_container)
+    default_video_container = data["video_container"]
+    video_container.remove(default_video_container)
+    video_container.insert(0, default_video_container)
 
     checkbox = read("custom_resolution_checkbox")
     video_checkbox = read("video_checkbox")
@@ -155,7 +155,9 @@ def video_settings():
             "video_container": video_container,
             "video_name": "Loading name...",
             "video_checkbox": video_checkbox,
-            "audio_checkbox": audio_checkbox
+            "audio_checkbox": audio_checkbox,
+            "open_browser": "yes",
+            "auto_update": "yes"
         }
 
         video_data.append(entry)
@@ -543,4 +545,3 @@ if __name__ == '__main__':
 # TODO: Sinnlose prints löschen
 # TODO: README.MD aktualisieren wegen Qualitätseinstellungen und yt-dlp Library aktuell halte + automatischer Update und ffmpeg installieren
 # TODO: Bei merge Fortschrittsanzeige
-# TODO: test, ob ffmpeg installiert ist
