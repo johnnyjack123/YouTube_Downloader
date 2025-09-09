@@ -5,7 +5,7 @@ import io
 import os
 import shutil
 import sys
-
+from program_files.outsourced_functions import read
 # Basisverzeichnis = Ordner, wo der Launcher selbst liegt
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -102,10 +102,14 @@ def check_for_updates():
             update()
     else:
         print("Program is unreachable")
-
-if check_internet_connection():
-    print("Internet connection")
-    check_for_updates()
+data = read("file")
+if data["auto_update"] == "yes":
+    if check_internet_connection():
+        print("Internet connection")
+        check_for_updates()
+    else:
+        print("No internet connection")
+        launch_app()
 else:
-    print("No internet connection")
+    print("Auto updates disabled")
     launch_app()

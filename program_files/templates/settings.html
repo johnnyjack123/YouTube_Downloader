@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Settings</title>
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.1/dist/darkly/bootstrap.min.css"
+            rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="p-4">
+
+<div class="container">
+    <h1 class="app-title">Settings</h1>
+
+    <form action="{{ url_for('settings') }}" method="POST" class="mb-4 form-card">
+
+        <!-- Browser Window -->
+        <div class="form-check mb-3">
+            {% if open_browser_window %}
+            <input type="checkbox" name="open_browser_window" value="yes"
+                   class="form-check-input" id="openBrowserWindow" checked>
+            {% else %}
+            <input type="checkbox" name="open_browser_window" value="yes"
+                   class="form-check-input" id="openBrowserWindow">
+            {% endif %}
+            <label for="openBrowserWindow" class="form-check-label">
+                Open automatically in browser window
+            </label>
+        </div>
+
+        <!-- Auto Update -->
+        <div class="form-check mb-3">
+            {% if auto_update %}
+            <input type="checkbox" name="auto_update" value="yes"
+                   class="form-check-input" id="autoUpdate" checked>
+            {% else %}
+            <input type="checkbox" name="auto_update" value="yes"
+                   class="form-check-input" id="autoUpdate">
+            {% endif %}
+            <label for="autoUpdate" class="form-check-label">
+                Auto Update
+            </label>
+        </div>
+
+        <hr class="my-4">
+
+        <input type="submit" class="btn btn-info w-100 btn-download" value="Save settings">
+    </form>
+
+    <a href="{{ url_for('home') }}" class="btn btn-gradient">
+        Back to Home
+    </a>
+</div>
+
+</body>
+</html>

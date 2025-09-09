@@ -19,6 +19,10 @@
     </a>
     <p><strong>{{ download_folder }} </strong> is used</p>
 
+    <a href="{{ url_for('settings_page') }}" class="btn btn-gradient mb-4">
+        Settings
+    </a>
+
     <form action="{{ url_for('video_settings', download_folder=download_folder) }}" method="POST"
           class="mb-4 form-card">
         <label class="form-label"><strong>YouTube Link</strong></label>

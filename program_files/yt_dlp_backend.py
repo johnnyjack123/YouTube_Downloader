@@ -12,7 +12,6 @@ import subprocess
 import sys
 from program_files.outsourced_functions import save, read, merging_video_audio, convert_audio_to_mp3, check_for_userdata, ensure_ffmpeg
 from datetime import datetime, timedelta
-import shutil
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Directory of this file
@@ -362,6 +361,21 @@ def previous_folder():
     new_path = os.path.dirname(path) #
     return redirect(url_for("choose_download_folder_page", path=new_path))
 
+@app.route('/settings_page', methods=["GET"])
+def settings_page():
+    data = read("file")
+    open_browser_window = data["open_browser"]
+    auto_update = data["auto_update"]
+    return render_template('settings.html', open_browser_window=open_browser_window, auto_update=auto_update)
+
+@app.route('/settings', methods=["POST"])
+def settings():
+    open_browser_window = request.form.get("open_browser_window")
+    auto_update = request.form.get("auto_update")
+    save("open_browser", open_browser_window)
+    save("auto_update", auto_update)
+    return redirect(url_for("settings_page"))
+
 def progress_hook(d):
     global abort_flag
 
@@ -517,7 +531,9 @@ if __name__ == '__main__':
     if result == "run":
         check_for_userdata()
         update_yt_dlp()
-        # open_browser()
+        data = read("file")
+        if data["open_browser"] == "yes":
+            open_browser()
         socketio.run(app, host="0.0.0.0", port=5000, debug=True)
     elif result == "restart":
         print("Please restart this python script and the whole command line.")
@@ -528,4 +544,3 @@ if __name__ == '__main__':
 # TODO: README.MD aktualisieren wegen Qualitätseinstellungen und yt-dlp Library aktuell halte + automatischer Update und ffmpeg installieren
 # TODO: Bei merge Fortschrittsanzeige
 # TODO: test, ob ffmpeg installiert ist
-# TODO: Option für Autoupdate
