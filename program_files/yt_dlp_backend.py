@@ -156,8 +156,6 @@ def video_settings():
             "video_name": "Loading name...",
             "video_checkbox": video_checkbox,
             "audio_checkbox": audio_checkbox,
-            "open_browser": "yes",
-            "auto_update": "yes"
         }
 
         video_data.append(entry)
@@ -275,8 +273,9 @@ def download():
 
                         state_logger = True # So that logger knows, when new video starts, helps to display "Download" only once per video
                         console(f"[{download_type}]Done downloading {download_type}.")
-
-                    if video_checkbox and audio_checkbox:
+                    file_data = read("file")
+                    merge = file_data["auto_merge"]
+                    if video_checkbox and audio_checkbox and merge:
                         console("Merging video and audio stream.")
                         output_file = video_file + "_merged." + video_container
                         result = merging_video_audio(video_file, audio_file, output_file)
@@ -368,14 +367,19 @@ def settings_page():
     data = read("file")
     open_browser_window = data["open_browser"]
     auto_update = data["auto_update"]
-    return render_template('settings.html', open_browser_window=open_browser_window, auto_update=auto_update)
+    auto_merge = data["auto_merge"]
+    return render_template('settings.html', open_browser_window=open_browser_window, auto_update=auto_update, auto_merge=auto_merge)
 
 @app.route('/settings', methods=["POST"])
 def settings():
     open_browser_window = request.form.get("open_browser_window")
-    auto_update = request.form.get("auto_update")
     save("open_browser", open_browser_window)
+
+    auto_update = request.form.get("auto_update")
     save("auto_update", auto_update)
+
+    auto_merge = request.form.get("auto_merge")
+    save("auto_merge", auto_merge)
     return redirect(url_for("settings_page"))
 
 def progress_hook(d):
@@ -532,7 +536,6 @@ if __name__ == '__main__':
     result = ensure_ffmpeg()
     if result == "run":
         check_for_userdata()
-        update_yt_dlp()
         data = read("file")
         if data["open_browser"] == "yes":
             open_browser()
@@ -545,3 +548,4 @@ if __name__ == '__main__':
 # TODO: Sinnlose prints löschen
 # TODO: README.MD aktualisieren wegen Qualitätseinstellungen und yt-dlp Library aktuell halte + automatischer Update und ffmpeg installieren
 # TODO: Bei merge Fortschrittsanzeige
+# TODO: wenn download startet, wird plan erstellt mit mehreren Punkten (video download, audio download, mergen) die abgearbeitet werden

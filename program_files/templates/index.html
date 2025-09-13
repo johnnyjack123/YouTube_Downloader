@@ -114,6 +114,8 @@
     <h3>Download Queue</h3>
 <ul id="queue" class="list-group mb-4"></ul>
 
+    <h3>Tasks</h3>
+<ul id="tasks" class="list-group mb-4"></ul>
 </div>
 
 <script>
@@ -202,6 +204,29 @@ document.addEventListener("DOMContentLoaded", () => {
     videoCheckbox.addEventListener("change", updateContainers);
 });
 
+// Task list
+//var socket = io();
+
+socket.on("update_task", function(task) {
+    let list = document.getElementById("tasks");
+    let li = document.getElementById(task.name);
+
+    if (!li) {
+        li = document.createElement("li");
+        li.id = task.name;
+        li.className = "list-group-item";
+        li.textContent = task.name;
+        list.appendChild(li);
+    }
+
+    if (task.status === "pending") {
+        li.style.color = "blue";
+        li.style.textDecoration = "none";
+    } else if (task.status === "done") {
+        li.style.color = "green";
+        li.style.textDecoration = "line-through";
+    }
+});
 
 </script>
 </body>

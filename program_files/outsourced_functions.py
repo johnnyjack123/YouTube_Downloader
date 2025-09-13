@@ -204,7 +204,8 @@ def check_for_userdata():
         "audio_checkbox": True,
         "yt-dlp_update_time": "2025-09-06T17:40:36.348409",
         "open_browser": "yes",
-        "auto_update": "yes"
+        "auto_update": "yes",
+        "auto_merge": "yes"
     }
 
     if not os.path.exists(userdata_file):

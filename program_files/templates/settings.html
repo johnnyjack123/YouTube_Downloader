@@ -43,6 +43,20 @@
             </label>
         </div>
 
+        <!-- Auto merge -->
+        <div class="form-check mb-3">
+            {% if auto_merge %}
+            <input type="checkbox" name="auto_merge" value="yes"
+                   class="form-check-input" id="autoMerge" checked>
+            {% else %}
+            <input type="checkbox" name="auto_merge" value="yes"
+                   class="form-check-input" id="autoMerge">
+            {% endif %}
+            <label for="autoMerge" class="form-check-label">
+                Auto merge after downloading two separate streams.
+            </label>
+        </div>
+
         <hr class="my-4">
 
         <input type="submit" class="btn btn-info w-100 btn-download" value="Save settings">
