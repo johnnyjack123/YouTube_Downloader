@@ -333,6 +333,12 @@ def download():
                             console(
                                 "Merging failed. Downloaded video and audio are still storaged in your download folder.")
 
+                    socketio.emit('progress', {
+                        'percent': '100%',
+                        'speed': '0',
+                        'eta': '0',
+                        'message': 'Finished!'})
+
                 except yt_dlp.utils.DownloadError as e:
                     print("Download failed:", e)
     finally:
@@ -434,6 +440,7 @@ def progress_hook(d):
             'eta': eta
         })
         socketio.sleep(0)
+    """
     elif d['status'] == 'finished':
         socketio.emit('progress', {
             'percent': '100%',
@@ -442,7 +449,7 @@ def progress_hook(d):
             'message': '✅ Finished Download!'})
         print("Download abgeschlossen, wird nun verarbeitet...")
         socketio.sleep(0)
-
+    """
 def convert_command_to_text(cmd_list):
     text = []
     for entry in cmd_list:

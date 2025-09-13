@@ -138,21 +138,28 @@ body {
     color: #04de1a;
 }
 
+/* Bullet für den aktuellen Task */
+#moving-bullet {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background-color: white;
+    border-radius: 50%;
+    transition: top 0.5s ease, left 0.5s ease, opacity 0.3s ease;
+    opacity: 0; /* unsichtbar, wenn kein Task working */
+}
+
+/* Bounce beim Landen */
 @keyframes bounce {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-6px); }
 }
 
-.working-bullet {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    background-color: white; /* dicker weißer Punkt */
-    border-radius: 50%;
+.bounce {
     animation: bounce 0.6s infinite;
-    margin-right: 8px;
 }
 
+/* Abhaken Animation */
 @keyframes checkmark {
     0% { transform: scale(0); opacity: 0; }
     50% { transform: scale(1.2); opacity: 1; }
@@ -164,3 +171,9 @@ body {
     animation: checkmark 0.3s ease forwards;
     margin-right: 8px;
 }
+
+/* Platz für Bullet */
+#tasks .list-group-item {
+    padding-left: 30px;
+}
+

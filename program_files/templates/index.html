@@ -114,9 +114,12 @@
     <h3>Download Queue</h3>
 <ul id="queue" class="list-group mb-4"></ul>
 
-    <h3>Tasks</h3>
-<ul id="tasks" class="list-group mb-4"></ul>
+    <h3>Download TODO</h3>
+<div style="position: relative;">
+    <ul id="tasks" class="list-group mb-4"></ul>
+    <span id="moving-bullet"></span>
 </div>
+
 
 <script>
 var socket = io();
@@ -207,35 +210,56 @@ document.addEventListener("DOMContentLoaded", () => {
 // Task list
 //var socket = io();
 
+var movingBullet = document.getElementById("moving-bullet");
+var lastWorkingIndex = -1;
+
 socket.on("update_tasks", function(tasks) {
     let list = document.getElementById("tasks");
     list.innerHTML = "";
 
-    tasks.forEach(task => {
+    let workingIndex = -1;
+
+    tasks.forEach((task, index) => {
         let li = document.createElement("li");
         li.className = "list-group-item";
+        li.textContent = task.name;
+        li.style.color = task.status === "done" ? "green" : "white";
+        if (task.status === "done") li.style.textDecoration = "line-through";
 
-        let bullet = document.createElement("span");
+        list.appendChild(li);
 
-        if (task.status === "pending") {
-            bullet.textContent = "•"; // kleiner Bullet für pending
-            li.style.color = "white"; // Schriftfarbe auf weiß
-        } else if (task.status === "working") {
-            bullet.className = "working-bullet"; // dicker weißer Punkt mit Bounce
-            li.style.color = "white";
-            li.style.fontWeight = "bold";
-        } else if (task.status === "done") {
-            bullet.textContent = "✅";
-            bullet.className = "done-bullet";
-            li.style.color = "green";
-            li.style.textDecoration = "line-through";
+        if (task.status === "working") workingIndex = index;
+    });
+
+    if (workingIndex !== -1) {
+        let li = list.children[workingIndex];
+        let bulletOffsetX = 8;
+        let bulletOffsetY = (li.offsetHeight - 12) / 2;
+
+        // Bullet sichtbar machen
+        movingBullet.style.opacity = 1;
+        movingBullet.style.left = bulletOffsetX + "px";
+        movingBullet.style.top = (li.offsetTop + bulletOffsetY) + "px";
+
+        // Bounce nur starten, wenn Task wechselt
+        if (workingIndex !== lastWorkingIndex) {
+            movingBullet.classList.remove("bounce");
+            void movingBullet.offsetWidth; // Force reflow
+            movingBullet.classList.add("bounce");
         }
 
-        li.appendChild(bullet);
-        li.appendChild(document.createTextNode(task.name));
-        list.appendChild(li);
-    });
+        lastWorkingIndex = workingIndex;
+    } else {
+        // Bullet sanft verschwinden lassen
+        movingBullet.style.opacity = 0;
+        movingBullet.classList.remove("bounce");
+        lastWorkingIndex = -1;
+    }
 });
+
+
+
+
 
 
 
