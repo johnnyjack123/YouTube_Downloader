@@ -1,4 +1,6 @@
 import eventlet
+from PyInstaller.lib.modulegraph.modulegraph import entry
+
 eventlet.monkey_patch()
 import yt_dlp
 from flask import Flask, request, render_template, redirect, url_for
@@ -10,8 +12,10 @@ import webbrowser
 import logging
 import subprocess
 import sys
-from program_files.outsourced_functions import save, read, merging_video_audio, convert_audio_to_mp3, check_for_userdata, ensure_ffmpeg
+from program_files.outsourced_functions import (save, read, merging_video_audio, convert_audio_to_mp3,
+                                                check_for_userdata, ensure_ffmpeg, create_task_list)
 from datetime import datetime, timedelta
+import time
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Directory of this file
@@ -41,7 +45,7 @@ video_quality_cmd = list(quality_map.keys())
 console_socket = []
 
 video_queue = []
-
+task_list = []
 app = Flask(
     __name__,
     template_folder = "./templates",
@@ -52,10 +56,12 @@ socketio = SocketIO(app, async_mode="eventlet", cors_allowed_origins="*")
 
 @socketio.on("connect")
 def handle_connect():
+    global task_list
     # TODO: Console in Array, Array wird immer bei reload mitgeschickt
     print("Client connected")
     console("Client connected")
     emit_queue()
+    update_tasks(task_list)
 
 @app.route('/', methods=["GET", "POST"])
 def home():
@@ -177,7 +183,7 @@ def start_download():
         socketio.start_background_task(download)
 
 def download():
-    global download_thread, abort_flag, is_downloading, video_data, state, state_logger, download_type
+    global download_thread, abort_flag, is_downloading, video_data, state, state_logger, download_type, task_list
 
     #abort_flag = False
     #print("download")
@@ -188,6 +194,13 @@ def download():
                 break  # Queue leer → beenden
             is_downloading = True
             current_video = video_data.pop(0)
+
+            video_task = "pending"
+            audio_task = "pending"
+            merge_task = "pending"
+            task_list = create_task_list(current_video, video_task, audio_task, merge_task)
+            update_tasks(task_list)
+
             emit_queue()
             logging.basicConfig(filename="debug.log", level=logging.DEBUG)
             logging.debug(video_data)
@@ -239,6 +252,9 @@ def download():
 
                 try:
                     if video_checkbox:
+                        video_task = "working"
+                        task_list = create_task_list(current_video, video_task, audio_task, merge_task)
+                        update_tasks(task_list)
                         download_type = "video"
                         console(f"[{download_type}] Preparing to download {download_type}.")
                         ydl_opts_video = {
@@ -255,8 +271,15 @@ def download():
 
                         state_logger = True # So that logger knows, when new video starts, helps to display "Download" only once per video
                         console(f"[{download_type}]Done downloading {download_type}.")
+                        video_task = "done"
+                        task_list = create_task_list(current_video, video_task, audio_task, merge_task)
+                        update_tasks(task_list)
 
                     if audio_checkbox:
+                        audio_task = "working"
+                        task_list = create_task_list(current_video, video_task, audio_task, merge_task)
+                        update_tasks(task_list)
+
                         download_type = "audio"
                         console(f"[{download_type}] Preparing to download {download_type}.")
                         ydl_opts_audio = {
@@ -273,14 +296,24 @@ def download():
 
                         state_logger = True # So that logger knows, when new video starts, helps to display "Download" only once per video
                         console(f"[{download_type}]Done downloading {download_type}.")
+                        audio_task = "done"
+                        task_list = create_task_list(current_video, video_task, audio_task, merge_task)
+                        update_tasks(task_list)
+
                     file_data = read("file")
                     merge = file_data["auto_merge"]
                     if video_checkbox and audio_checkbox and merge:
+                        merge_task = "working"
+                        task_list = create_task_list(current_video, video_task, audio_task, merge_task)
+                        update_tasks(task_list)
                         console("Merging video and audio stream.")
                         output_file = video_file + "_merged." + video_container
                         result = merging_video_audio(video_file, audio_file, output_file)
                         if result:
                             console("Merging successful.")
+                            merge_task = "done"
+                            task_list = create_task_list(current_video, video_task, audio_task, merge_task)
+                            update_tasks(task_list)
                             os.remove(video_file)
                             os.remove(audio_file)
                         else:
@@ -531,6 +564,15 @@ def get_name(video_url):
 def start_get_name(video_url):
     t = threading.Thread(target=get_name, args=(video_url,))
     t.start()
+
+def update_tasks(tasks):
+    #for task in tasks:
+        # Task wird blau angezeigt (pending)
+    socketio.emit("update_tasks", tasks)
+
+        # Task erledigt -> grün
+        #task["status"] = "done"
+        #socketio.emit("update_task", task)
 
 if __name__ == '__main__':
     result = ensure_ffmpeg()

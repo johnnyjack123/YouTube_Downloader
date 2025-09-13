@@ -248,3 +248,14 @@ def ensure_ffmpeg():
                     return False
         else:
             return False
+
+def create_task_list(video_data, video_task, audio_task, merge_task):
+    task_list = []
+    if video_data["video_checkbox"]:
+        task_list.append({"name": "Download Video", "status": video_task})
+    if video_data["audio_checkbox"]:
+        task_list.append({"name": "Download Audio", "status": audio_task})
+    data = read("file")
+    if data["auto_merge"] == "yes":
+        task_list.append({"name": "Merge", "status": merge_task})
+    return task_list

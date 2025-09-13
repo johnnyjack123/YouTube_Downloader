@@ -207,26 +207,39 @@ document.addEventListener("DOMContentLoaded", () => {
 // Task list
 //var socket = io();
 
-socket.on("update_task", function(task) {
+socket.on("update_tasks", function(tasks) {
     let list = document.getElementById("tasks");
-    let li = document.getElementById(task.name);
+    list.innerHTML = "";
 
-    if (!li) {
-        li = document.createElement("li");
-        li.id = task.name;
+    tasks.forEach(task => {
+        let li = document.createElement("li");
         li.className = "list-group-item";
-        li.textContent = task.name;
-        list.appendChild(li);
-    }
 
-    if (task.status === "pending") {
-        li.style.color = "blue";
-        li.style.textDecoration = "none";
-    } else if (task.status === "done") {
-        li.style.color = "green";
-        li.style.textDecoration = "line-through";
-    }
+        let bullet = document.createElement("span");
+
+        if (task.status === "pending") {
+            bullet.textContent = "•"; // kleiner Bullet für pending
+            li.style.color = "white"; // Schriftfarbe auf weiß
+        } else if (task.status === "working") {
+            bullet.className = "working-bullet"; // dicker weißer Punkt mit Bounce
+            li.style.color = "white";
+            li.style.fontWeight = "bold";
+        } else if (task.status === "done") {
+            bullet.textContent = "✅";
+            bullet.className = "done-bullet";
+            li.style.color = "green";
+            li.style.textDecoration = "line-through";
+        }
+
+        li.appendChild(bullet);
+        li.appendChild(document.createTextNode(task.name));
+        list.appendChild(li);
+    });
 });
+
+
+
+
 
 </script>
 </body>
