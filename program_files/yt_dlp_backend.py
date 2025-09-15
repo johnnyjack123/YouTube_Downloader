@@ -1,6 +1,5 @@
 import eventlet
 from PyInstaller.lib.modulegraph.modulegraph import entry
-
 eventlet.monkey_patch()
 import yt_dlp
 from flask import Flask, request, render_template, redirect, url_for
@@ -15,7 +14,7 @@ import sys
 from program_files.outsourced_functions import (save, read, merging_video_audio, convert_audio_to_mp3,
                                                 check_for_userdata, ensure_ffmpeg, create_task_list)
 from datetime import datetime, timedelta
-import time
+import program_files.globals as global_variables
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Directory of this file
@@ -25,7 +24,7 @@ download_thread = False
 abort_flag = False
 
 is_downloading = False
-video_data = []
+# video_data = []
 
 state = True
 
@@ -42,10 +41,11 @@ quality_map = {
 
 video_quality_cmd = list(quality_map.keys())
 
-console_socket = []
+# console_socket = []
 
 video_queue = []
-task_list = []
+# task_list = []
+
 app = Flask(
     __name__,
     template_folder = "./templates",
@@ -53,16 +53,19 @@ app = Flask(
 )
 
 socketio = SocketIO(app, async_mode="eventlet", cors_allowed_origins="*")
+import program_files.sockets as sockets
+from program_files.sockets import init_socket, update_tasks, update_title_in_queue, console, emit_queue, progress
+sockets.init_socket(socketio)
 
+"""
 @socketio.on("connect")
 def handle_connect():
     global task_list
-    # TODO: Console in Array, Array wird immer bei reload mitgeschickt
     print("Client connected")
     console("Client connected")
     emit_queue()
     update_tasks(task_list)
-
+"""
 @app.route('/', methods=["GET", "POST"])
 def home():
     global video_quality_cmd
@@ -91,20 +94,19 @@ def home():
     checkbox = read("custom_resolution_checkbox")
     video_checkbox = read("video_checkbox")
     audio_checkbox = read("audio_checkbox")
-
     return render_template('index.html',
                            download_folder=download_folder,
                            video_quality=video_quality,
                            video_resolution=video_resolution,
                            video_container=video_container,
                            checkbox=checkbox,
-                           console_socket=console_socket,
+                           console_socket=global_variables.console_socket,
                            video_checkbox=video_checkbox,
                            audio_checkbox=audio_checkbox)
 
 @app.route('/video_settings', methods=["GET", "POST"])
 def video_settings():
-    global video_data, is_downloading
+    global is_downloading
     custom_resolution = request.form.get("custom_resolution")
     video_checkbox = request.form.get("video_checkbox")
     audio_checkbox = request.form.get("audio_checkbox")
@@ -147,7 +149,7 @@ def video_settings():
         save("video_container", video_container)
     video_url = request.form.get("video_url")
 
-    found = next((v for v in video_data if v["video_url"] == video_url), None)
+    found = next((v for v in global_variables.video_data if v["video_url"] == video_url), None)
 
     if found:
         console("Video already in Queue.")
@@ -164,11 +166,11 @@ def video_settings():
             "audio_checkbox": audio_checkbox,
         }
 
-        video_data.append(entry)
+        global_variables.video_data.append(entry)
         start_get_name(video_url)
         emit_queue()
         logging.basicConfig(filename="debug.log", level=logging.DEBUG)
-        logging.debug(video_data)
+        logging.debug(global_variables.video_data)
         logging.debug(f"Saving video_quality = {video_quality!r} (type={type(video_quality)})")
 
         if not is_downloading:
@@ -183,30 +185,30 @@ def start_download():
         socketio.start_background_task(download)
 
 def download():
-    global download_thread, abort_flag, is_downloading, video_data, state, state_logger, download_type, task_list
+    global download_thread, abort_flag, is_downloading, state, state_logger, download_type
 
     #abort_flag = False
     #print("download")
     console("Preparing download")
     try:
         while True:  # Endlosschleife, solange es noch Videos gibt
-            if not video_data:
+            if not global_variables.video_data:
                 break  # Queue leer → beenden
             is_downloading = True
-            current_video = video_data.pop(0)
+            current_video = global_variables.video_data.pop(0)
 
             video_task = "pending"
             audio_task = "pending"
             merge_task = "pending"
-            task_list = create_task_list(current_video, video_task, audio_task, merge_task)
-            update_tasks(task_list)
+            global_variables.task_list = create_task_list(current_video, video_task, audio_task, merge_task)
+            update_tasks()
 
             emit_queue()
             logging.basicConfig(filename="debug.log", level=logging.DEBUG)
-            logging.debug(video_data)
+            logging.debug(global_variables.video_data)
 
             socketio.emit('video_list', {
-                "queue": video_data,
+                "queue": global_variables.video_data,
                 "current": current_video
             })
 
@@ -253,8 +255,8 @@ def download():
                 try:
                     if video_checkbox:
                         video_task = "working"
-                        task_list = create_task_list(current_video, video_task, audio_task, merge_task)
-                        update_tasks(task_list)
+                        global_variables.task_list = create_task_list(current_video, video_task, audio_task, merge_task)
+                        update_tasks()
                         download_type = "video"
                         console(f"[{download_type}] Preparing to download {download_type}.")
                         ydl_opts_video = {
@@ -272,13 +274,13 @@ def download():
                         state_logger = True # So that logger knows, when new video starts, helps to display "Download" only once per video
                         console(f"[{download_type}]Done downloading {download_type}.")
                         video_task = "done"
-                        task_list = create_task_list(current_video, video_task, audio_task, merge_task)
-                        update_tasks(task_list)
+                        global_variables.task_list = create_task_list(current_video, video_task, audio_task, merge_task)
+                        update_tasks()
 
                     if audio_checkbox:
                         audio_task = "working"
-                        task_list = create_task_list(current_video, video_task, audio_task, merge_task)
-                        update_tasks(task_list)
+                        global_variables.task_list = create_task_list(current_video, video_task, audio_task, merge_task)
+                        update_tasks()
 
                         download_type = "audio"
                         console(f"[{download_type}] Preparing to download {download_type}.")
@@ -297,23 +299,23 @@ def download():
                         state_logger = True # So that logger knows, when new video starts, helps to display "Download" only once per video
                         console(f"[{download_type}]Done downloading {download_type}.")
                         audio_task = "done"
-                        task_list = create_task_list(current_video, video_task, audio_task, merge_task)
-                        update_tasks(task_list)
+                        global_variables.task_list = create_task_list(current_video, video_task, audio_task, merge_task)
+                        update_tasks()
 
                     file_data = read("file")
                     merge = file_data["auto_merge"]
                     if video_checkbox and audio_checkbox and merge:
                         merge_task = "working"
-                        task_list = create_task_list(current_video, video_task, audio_task, merge_task)
-                        update_tasks(task_list)
+                        global_variables.task_list = create_task_list(current_video, video_task, audio_task, merge_task)
+                        update_tasks()
                         console("Merging video and audio stream.")
                         output_file = video_file + "_merged." + video_container
                         result = merging_video_audio(video_file, audio_file, output_file)
                         if result:
                             console("Merging successful.")
                             merge_task = "done"
-                            task_list = create_task_list(current_video, video_task, audio_task, merge_task)
-                            update_tasks(task_list)
+                            global_variables.task_list = create_task_list(current_video, video_task, audio_task, merge_task)
+                            update_tasks()
                             os.remove(video_file)
                             os.remove(audio_file)
                         else:
@@ -333,11 +335,7 @@ def download():
                             console(
                                 "Merging failed. Downloaded video and audio are still storaged in your download folder.")
 
-                    socketio.emit('progress', {
-                        'percent': '100%',
-                        'speed': '0',
-                        'eta': '0',
-                        'message': 'Finished!'})
+                    progress("finished", False, False, False)
 
                 except yt_dlp.utils.DownloadError as e:
                     print("Download failed:", e)
@@ -432,14 +430,8 @@ def progress_hook(d):
         percent = d.get('_percent_str', '0.0%').strip()
         speed = d.get('_speed_str', 'N/A')
         eta = d.get('_eta_str', 'N/A')
+        progress("downloading", percent, speed, eta)
 
-        # Sende Fortschritt an den Client
-        socketio.emit('progress', {
-            'percent': percent,
-            'speed': speed,
-            'eta': eta
-        })
-        socketio.sleep(0)
     """
     elif d['status'] == 'finished':
         socketio.emit('progress', {
@@ -450,6 +442,7 @@ def progress_hook(d):
         print("Download abgeschlossen, wird nun verarbeitet...")
         socketio.sleep(0)
     """
+# TODO: auslagern in outsourced_functions
 def convert_command_to_text(cmd_list):
     text = []
     for entry in cmd_list:
@@ -459,6 +452,7 @@ def convert_command_to_text(cmd_list):
             text.append(entry)  # fallback: gib original zurück
     return text
 
+# TODO: auslagern in outsourced_functions
 def convert_text_to_command(description, video_checkbox, audio_checkbox):
     reverse_map = {v: k for k, v in quality_map.items()}
 
@@ -508,7 +502,7 @@ class Logger:
         print("ERROR:", msg)
         console(msg)
 
-def console(command):
+"""def console(command):
     global console_socket
     if command == "Client connected":
         if "Client connected" in console_socket:
@@ -519,19 +513,20 @@ def console(command):
     socketio.emit("console", command)
     socketio.sleep(0)
     console_socket.append(command)
-    return
+    return"""
 
-def emit_queue():
+"""def emit_queue():
     # Take names of videos
     queue_names = [video["video_name"] for video in video_data]
     socketio.emit("queue", queue_names)
-    socketio.sleep(0)
+    socketio.sleep(0)"""
 
 def open_browser():
     url = "http://127.0.0.1:5000"
     webbrowser.open(url)
     return
 
+# TODO: in outsourced_functions auslagern
 def update_yt_dlp():
     now = datetime.now()
 
@@ -553,7 +548,7 @@ def update_yt_dlp():
         subprocess.run([sys.executable, "-m", "pip", "install", "-U", "yt-dlp"])
         save("yt-dlp_update_time", now.isoformat())
     return
-
+"""
 def update_title_in_queue(title, video_url):
     if video_data:
         if title:
@@ -561,7 +556,7 @@ def update_title_in_queue(title, video_url):
             if video:
                 video["video_name"] = title
                 emit_queue()
-
+"""
 def get_name(video_url):
     with yt_dlp.YoutubeDL({}) as ydl:
         video_metadata = ydl.extract_info(video_url, download=False)
@@ -571,7 +566,7 @@ def get_name(video_url):
 def start_get_name(video_url):
     t = threading.Thread(target=get_name, args=(video_url,))
     t.start()
-
+"""
 def update_tasks(tasks):
     #for task in tasks:
         # Task wird blau angezeigt (pending)
@@ -580,7 +575,7 @@ def update_tasks(tasks):
         # Task erledigt -> grün
         #task["status"] = "done"
         #socketio.emit("update_task", task)
-
+"""
 if __name__ == '__main__':
     result = ensure_ffmpeg()
     if result == "run":
@@ -597,4 +592,3 @@ if __name__ == '__main__':
 # TODO: Sinnlose prints löschen
 # TODO: README.MD aktualisieren wegen Qualitätseinstellungen und yt-dlp Library aktuell halte + automatischer Update und ffmpeg installieren
 # TODO: Bei merge Fortschrittsanzeige
-# TODO: wenn download startet, wird plan erstellt mit mehreren Punkten (video download, audio download, mergen) die abgearbeitet werden

@@ -4,6 +4,7 @@ import subprocess
 import os
 import shutil
 import sys
+from program_files.sockets import progress
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Ordner, wo die aktuelle Datei liegt
 userdata_file = os.path.join(BASE_DIR, "..", "userdata.json")
@@ -68,6 +69,24 @@ def find_closest_resolution(video_height, video_formats):
     closest = min(valid_formats, key=lambda f: abs(f["height"] - video_height))
     return closest["format_id"], closest["height"]
 
+def get_frame_count_estimate(video_file):
+    cmd = [
+        'ffprobe', '-v', 'error',
+        '-select_streams', 'v:0',
+        '-show_entries', 'stream=avg_frame_rate,duration',
+        '-of', 'default=noprint_wrappers=1:nokey=1',
+        video_file
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    fps_str, duration_str = result.stdout.strip().split("\n")
+
+    # FPS ist oft ein Bruch wie "30000/1001"
+    num, den = map(int, fps_str.split('/'))
+    fps = num / den
+    duration = float(duration_str)
+
+    return int(duration * fps)
+
 def merging_video_audio(video_file, audio_file, output_file):
     print("Merging")
 
@@ -109,21 +128,46 @@ def merging_video_audio(video_file, audio_file, output_file):
             print(f"Audio codec {audio_codec} not supported in MOV, re-encoding to AAC")
             audio_option = "aac"
 
-    result = subprocess.run([
+    total_frames = get_frame_count_estimate(video_file)
+
+    cmd = [
         "ffmpeg", "-y",
         "-i", video_file,
         "-i", audio_file,
         "-c:v", video_option,
         "-c:a", audio_option,
+        "-progress", "pipe:1",  # ← FFmpeg schreibt Fortschritt auf stdout
+        #"-nostats",  # optional, um normale Logs zu unterdrücken
         output_file
-    ])
+    ]
 
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True)
+
+    for line in process.stdout:
+        line = line.strip()
+        if line.startswith("frame="):
+            current_frame = int(line.split("=")[1])
+            percent = round((current_frame / total_frames) * 100, 1)
+            progress("downloading", str(percent) + "%", 0, 0)
+            sys.stdout.write(f"\rFortschritt: {percent:.2f}% ({current_frame}/{total_frames})")
+            sys.stdout.flush()
+
+    process.wait()
+    if process.returncode != 0:
+        print("\nMerging failed!")
+        return False
+    else:
+        print("\nMerging successful.")
+        return True
+
+    """
     if result.returncode == 0:
         print("Merging successful")
         return True
     else:
         print("Merging failed")
         return False
+    """
 
 def convert_audio_to_mp3(input_file, output_file):
     print("Converting audio to MP3...")
@@ -259,3 +303,4 @@ def create_task_list(video_data, video_task, audio_task, merge_task):
     if data["auto_merge"] == "yes":
         task_list.append({"name": "Merge", "status": merge_task})
     return task_list
+
