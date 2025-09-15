@@ -4,10 +4,15 @@ import subprocess
 import os
 import shutil
 import sys
+
+import program_files.globals as globals
 from program_files.sockets import progress
+import webbrowser
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Ordner, wo die aktuelle Datei liegt
 userdata_file = os.path.join(BASE_DIR, "..", "userdata.json")
+
+video_quality_cmd = list(globals.quality_map.keys())
 
 def sort_formats(video_url, video_resolution):
     # Check if quality is available
@@ -136,8 +141,8 @@ def merging_video_audio(video_file, audio_file, output_file):
         "-i", audio_file,
         "-c:v", video_option,
         "-c:a", audio_option,
-        "-progress", "pipe:1",  # ← FFmpeg schreibt Fortschritt auf stdout
-        #"-nostats",  # optional, um normale Logs zu unterdrücken
+        "-progress", "pipe:1",  # ← FFmpeg writes progress to stdout
+        "-nostats",  # supress logs in console
         output_file
     ]
 
@@ -149,7 +154,7 @@ def merging_video_audio(video_file, audio_file, output_file):
             current_frame = int(line.split("=")[1])
             percent = round((current_frame / total_frames) * 100, 1)
             progress("downloading", str(percent) + "%", 0, 0)
-            sys.stdout.write(f"\rFortschritt: {percent:.2f}% ({current_frame}/{total_frames})")
+            sys.stdout.write(f"\rProgress: {percent:.2f}% ({current_frame}/{total_frames})")
             sys.stdout.flush()
 
     process.wait()
@@ -160,14 +165,6 @@ def merging_video_audio(video_file, audio_file, output_file):
         print("\nMerging successful.")
         return True
 
-    """
-    if result.returncode == 0:
-        print("Merging successful")
-        return True
-    else:
-        print("Merging failed")
-        return False
-    """
 
 def convert_audio_to_mp3(input_file, output_file):
     print("Converting audio to MP3...")
@@ -236,7 +233,6 @@ def read(entry):
 
 def check_for_userdata():
     default_download_folder = os.path.join(os.path.expanduser("~"), "Videos")
-
     default_content = {
         "download_folder": default_download_folder,
         "video_quality": "best",
@@ -251,7 +247,6 @@ def check_for_userdata():
         "auto_update": "yes",
         "auto_merge": "yes"
     }
-
     if not os.path.exists(userdata_file):
         with open(userdata_file, "w", encoding="utf-8") as f:
             json.dump(default_content, f, indent=4, ensure_ascii=False)
@@ -304,3 +299,49 @@ def create_task_list(video_data, video_task, audio_task, merge_task):
         task_list.append({"name": "Merge", "status": merge_task})
     return task_list
 
+def open_browser():
+    url = "http://127.0.0.1:5000"
+    webbrowser.open(url)
+    return
+
+def convert_text_to_command(description, video_checkbox, audio_checkbox):
+    reverse_map = {v: k for k, v in globals.quality_map.items()}
+
+    cmd_video = False
+    cmd_audio = False
+
+    if video_checkbox == "yes":
+        if description in reverse_map:
+            cmd_video = reverse_map[description]
+
+    if audio_checkbox == "yes":
+        if description == "Best":
+            cmd_audio = "bestaudio/best" #Not the best way, because by single video downloads there is noch fallback.
+        elif description == "Average":
+            if not video_checkbox == "yes" and audio_checkbox == "yes":
+                cmd_audio = "bestaudio/best"
+            else:
+                cmd_audio = False  # "Average" = nur Video
+        elif description == "Worst":
+            cmd_audio = "worstaudio/worst"
+    return cmd_video, cmd_audio
+
+def convert_command_to_text(cmd_list):
+    text = []
+    for entry in cmd_list:
+        if entry in globals.quality_map:
+            text.append(globals.quality_map[entry])
+        else:
+            text.append(entry)  # fallback: gib original zurück
+    return text
+
+def search_download_folder(folder, path):
+    if folder:
+        path = os.path.join(path, folder)
+    else:
+        path = path
+    folders = [
+        f for f in os.listdir(path)
+        if os.path.isdir(os.path.join(path, f)) and not f.startswith(".")  # hidden Unix-directories
+    ]
+    return folders, path
