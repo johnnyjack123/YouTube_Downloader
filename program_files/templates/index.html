@@ -8,263 +8,288 @@
             rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.14.0/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.14.0/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.14.0/SplitText.min.js"></script>
 </head>
 <body class="p-4">
 
 <div class="container">
-    <h1 class="app-title">YouTube Video Downloader</h1>
-
-    <a href="{{ url_for('choose_download_folder_page') }}" class="btn btn-gradient mb-4">
-        Choose Download Folder
-    </a>
-    <p><strong>{{ download_folder }} </strong> is used</p>
-
-    <a href="{{ url_for('settings_page') }}" class="btn btn-gradient mb-4">
-        Settings
-    </a>
-
-    <form action="{{ url_for('video_settings', download_folder=download_folder) }}" method="POST"
-          class="mb-4 form-card">
-        <label class="form-label"><strong>YouTube Link</strong></label>
-
-        <input type="text" name="video_url" class="form-control mb-3"
-               placeholder="Insert YouTube Link" autocomplete="off">
-        <hr class="my-4">
-
-        <label class="form-label"><strong>Video Quality Settings</strong></label>
-        <select name="video_quality" class="form-select mb-3">
-            {% for quality in video_quality %}
-            <option value="{{ quality }}">{{ quality }}</option>
-            {% endfor %}
-        </select>
-        {% if video_checkbox %}
-        <input type="checkbox" name="video_checkbox" value="yes" class="form-check-input" id="videoCheckbox" checked>
-        {% else %}
-
-        <input type="checkbox" name="video_checkbox" value="yes" class="form-check-input" id="videoCheckbox">
-        {% endif %}
-        <label for="videoCheckbox" class="form-check-label">Download Video</label>
-        {% if audio_checkbox %}
-        <input type="checkbox" name="audio_checkbox" value="yes" class="form-check-input" id="audioCheckbox" checked>
-        {% else %}
-
-        <input type="checkbox" name="audio_checkbox" value="yes" class="form-check-input" id="audioCheckbox">
-        {% endif %}
-        <label for="audioCheckbox" class="form-check-label">Download Audio</label>
-        <hr class="my-4">
-
-        <label class="form-label"><strong>Custom Video Resolution</strong></label>
-        <select name="video_resolution" class="form-select mb-2">
-            {% for resolution in video_resolution %}
-            <option value="{{ resolution }}">{{ resolution }}</option>
-            {% endfor %}
-        </select>
-        <div class="form-check mb-3">
-            {% if checkbox %}
-            <input type="checkbox" name="custom_resolution" value="yes" class="form-check-input" id="customRes" checked>
-            {% else %}
-
-            <input type="checkbox" name="custom_resolution" value="yes" class="form-check-input" id="customRes">
-            {% endif %}
-            <label for="customRes" class="form-check-label">Use custom resolution</label>
-        </div>
-
-        <hr class="my-4">
-
-
-        <label class="form-label"><strong>Video Container</strong></label>
-        <select name="video_container" class="form-select mb-4">
-            {% for container in video_container %}
-            <option value="{{ container }}">{{ container }}</option>
-            {% endfor %}
-        </select>
-
-        <hr class="my-4">
-
-
-        <input type="submit" class="btn btn-info w-100 btn-download" value="Start Download">
-    </form>
-
-    <!-- Fortschrittsanzeige -->
-    <div class="progress custom-progress">
-        <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated"
-             role="progressbar" style="width: 0%;">0%
-        </div>
+    <div class="image-container">
+        <img src="{{ url_for('static', filename='logo/logo.png') }}" alt="Title" class="title-image">
     </div>
-    <p id="progress-text" class="mt-3">Nothing Downloaded...</p>
-    <a id="cancel-download" href="{{ url_for('abort') }}"
-       class="btn btn-gradient mb-4" style="display: none;">
-        Cancel Download
-    </a>
+    <div class="button-row mb-4">
+        <a href="{{ url_for('choose_download_folder_page') }}" class="btn icon-btn" title="Choose download folder">
+            <img src="{{ url_for('static', filename='icons/folder-open.svg') }}" alt="DownloadFolder">
+        </a>
+        <p><strong>{{ download_folder }} </strong> is used</p>
 
-    <h3>Console</h3>
-    <div class="console-box">
-
-        {% for command in console_socket %}
-        <div class="text">
-    <span>
-        <strong class="console-text">[console]:</strong> {{ command }}
-    </span>
-        </div>
-        {% endfor %}
-        <div class="console" id="console">
-        </div>
+        <a href="{{ url_for('settings_page') }}" class="btn icon-btn" title="Settings">
+            <img src="{{ url_for('static', filename='icons/settings.svg') }}" alt="Settings">
+        </a>
     </div>
 
-    <h3>Download Queue</h3>
-<ul id="queue" class="list-group mb-4"></ul>
+    <!-- Grid für drei Spalten -->
+    <div class="d-flex" style="gap:1rem; height: calc(100vh - 120px);">
 
-    <h3>Download TODO</h3>
-<div style="position: relative;">
-    <ul id="tasks" class="list-group mb-4"></ul>
-    <span id="moving-bullet"></span>
+        <!-- Linke Spalte -->
+        <div class="d-flex flex-column" style="flex:1; gap:1rem;">
+            <!-- Download task list -->
+            <div class="card flex-fill" style="overflow-y:auto;">
+                <div class="card-header"><h3>Download TODO</h3></div>
+                <div class="card-body" style="overflow-y:auto; height:50%;">
+                    <ul id="tasks" class="list-group mb-0"></ul>
+                    <span id="moving-bullet"></span>
+                </div>
+            </div>
+
+            <!-- Download Queue -->
+            <div class="card flex-fill queue-card" style="overflow-y:auto;">
+    <div class="card-header queue-header"><h3>Download Queue</h3></div>
+    <div class="card-body" style="overflow-y:auto; height:50%;">
+        <ul id="queue" class="queue-list mb-0">
+            <ul class="queue-list">
+  <li><img src="{{ url_for('static', filename='icons/youtube.svg') }}" class="icon-btn"></li>
+</ul>
+
+        </ul>
+    </div>
 </div>
+        </div>
 
+        <!-- Mittlere Spalte: Download Form -->
+        <div style="flex:1;">
+            <form action="{{ url_for('video_settings', download_folder=download_folder) }}" method="POST"
+                  class="mb-4 form-card">
+                <label class="form-label"><strong>YouTube Link</strong></label>
+                <input type="text" name="video_url" class="form-control mb-3" placeholder="Insert YouTube Link"
+                       autocomplete="off">
 
-<script>
-var socket = io();
-var cancelLink = document.getElementById('cancel-download');
+                <hr class="my-4">
 
-socket.on('progress', function (data) {
-    if (cancelLink.style.display === 'none') {
-        cancelLink.style.display = 'inline-block';
-    }
+                <label class="form-label"><strong>Video Quality Settings</strong></label>
+                <select name="video_quality" class="form-select mb-3">
+                    {% for quality in video_quality %}
+                    <option value="{{ quality }}">{{ quality }}</option>
+                    {% endfor %}
+                </select>
 
-    if (data.message) {
-        document.getElementById('progress-text').textContent = data.message;
-        if (data.percent === '100%') {
-            document.getElementById('progress-bar').classList.remove('progress-bar-animated');
-            document.getElementById('progress-bar').classList.add('bg-success');
-            cancelLink.style.display = 'none';
-        }
-        return;
-    }
+                {% if video_checkbox %}
+                <input type="checkbox" name="video_checkbox" value="yes" class="form-check-input" id="videoCheckbox"
+                       checked>
+                {% else %}
+                <input type="checkbox" name="video_checkbox" value="yes" class="form-check-input" id="videoCheckbox">
+                {% endif %}
+                <label for="videoCheckbox" class="form-check-label">Download Video</label>
 
-    let percent = parseFloat(data.percent);
-    document.getElementById('progress-bar').style.width = percent + "%";
-    document.getElementById('progress-bar').textContent = data.percent;
-    document.getElementById('progress-text').textContent =
-        `Progress: ${data.percent} | Speed: ${data.speed} | ETA: ${data.eta}`;
-});
+                {% if audio_checkbox %}
+                <input type="checkbox" name="audio_checkbox" value="yes" class="form-check-input" id="audioCheckbox"
+                       checked>
+                {% else %}
+                <input type="checkbox" name="audio_checkbox" value="yes" class="form-check-input" id="audioCheckbox">
+                {% endif %}
+                <label for="audioCheckbox" class="form-check-label">Download Audio</label>
 
-// Console
-const consoleBox = document.getElementById("console");
-const createMessage = (msg) => {
-    const content = `
-<div class="text">
-    <span>
-        <strong class="console-text">[console]</strong>: ${msg}
-    </span>
-</div>
-`;
-    consoleBox.innerHTML += content;
-};
+                <hr class="my-4">
 
-socket.on("console", (msg) => {
-    createMessage(msg);
-});
+                <label class="form-label"><strong>Custom Video Resolution</strong></label>
+                <select name="video_resolution" class="form-select mb-2">
+                    {% for resolution in video_resolution %}
+                    <option value="{{ resolution }}">{{ resolution }}</option>
+                    {% endfor %}
+                </select>
+                <div class="form-check mb-3">
+                    {% if checkbox %}
+                    <input type="checkbox" name="custom_resolution" value="yes" class="form-check-input" id="customRes"
+                           checked>
+                    {% else %}
+                    <input type="checkbox" name="custom_resolution" value="yes" class="form-check-input" id="customRes">
+                    {% endif %}
+                    <label for="customRes" class="form-check-label">Use custom resolution</label>
+                </div>
 
-// Queue
-socket.on("queue", function(queue) {
-    let list = document.getElementById("queue");
-    list.innerHTML = "";
-    queue.forEach(videoName => {
-        let li = document.createElement("li");
-        li.textContent = videoName;
-        list.appendChild(li);
-    });
-});
+                <hr class="my-4">
 
-//mp3
-document.addEventListener("DOMContentLoaded", () => {
-    const audioCheckbox = document.getElementById("audioCheckbox");
-    const videoCheckbox = document.getElementById("videoCheckbox");
-    const containerSelect = document.querySelector("select[name='video_container']");
+                <label class="form-label"><strong>Video Container</strong></label>
+                <select name="video_container" class="form-select mb-4">
+                    {% for container in video_container %}
+                    <option value="{{ container }}">{{ container }}</option>
+                    {% endfor %}
+                </select>
 
-    const mp3Option = document.createElement("option");
-    mp3Option.value = "mp3";
-    mp3Option.textContent = "mp3";
+                <hr class="my-4">
+                <input type="submit" class="btn btn-info w-100 btn-download" value="Start Download">
+            </form>
 
-    function updateContainers() {
-        if (audioCheckbox.checked && !videoCheckbox.checked) {
-            // mp3 hinzufügen, falls nicht schon drin
-            if (![...containerSelect.options].some(opt => opt.value === "mp3")) {
-                containerSelect.appendChild(mp3Option);
+            <div class="loading-container">
+                <div class="loading-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-text" id="progress-text">0%</div>
+            </div>
+
+            <a id="cancel-download" href="{{ url_for('abort') }}" class="btn btn-gradient mb-4" style="display: none;">
+                Cancel Download
+            </a>
+        </div>
+
+        <!-- Rechte Spalte: Konsole -->
+        <div class="d-flex flex-column" style="flex:1;">
+            <div class="card flex-fill">
+                <div class="card-header"><h3>Console</h3></div>
+                <div class="card-body console-box console-box" style="overflow-y:auto;">
+                    {% for command in console_socket %}
+                    <div class="text">
+                    <span>
+                        <strong class="console-text">[console]:</strong> {{ command }}
+                    </span>
+                    </div>
+                    {% endfor %}
+                    <div class="console" id="console"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <script>
+        var socket = io();
+        var cancelLink = document.getElementById('cancel-download');
+
+        socket.on('progress', function (data) {
+            if (cancelLink.style.display === 'none') {
+                cancelLink.style.display = 'inline-block';
             }
-        } else {
-            // mp3 entfernen
-            [...containerSelect.options].forEach(opt => {
-                if (opt.value === "mp3") opt.remove();
+
+            if (data.message) {
+                document.getElementById('progress-text').textContent = data.message;
+                if (data.percent === '100%') {
+                    cancelLink.style.display = 'none';
+                }
+                return;
+            }
+
+            let percent = parseFloat(data.percent);
+            const fill = document.getElementById("progress-fill");
+            const text = document.getElementById("progress-text");
+
+            fill.style.width = percent + "%";
+            text.textContent = `Progress: ${data.percent} | Speed: ${data.speed} | ETA: ${data.eta}`;
+
+            if (data.percent === '100%') {
+                cancelLink.style.display = 'none';
+            }
+        });
+
+
+        // Console
+        const consoleBox = document.getElementById("console");
+        const createMessage = (msg) => {
+            const content = `
+        <div class="text">
+            <span>
+                <strong class="console-text">[console]</strong>: ${msg}
+            </span>
+        </div>
+        `;
+            consoleBox.innerHTML += content;
+        };
+
+        socket.on("console", (msg) => {
+            createMessage(msg);
+        });
+
+        // Queue
+        socket.on("queue", function(queue) {
+            let list = document.getElementById("queue");
+            list.innerHTML = "";
+            queue.forEach(videoName => {
+                let li = document.createElement("li");
+                li.textContent = videoName;
+                list.appendChild(li);
             });
-        }
-    }
+        });
 
-    // Initial check
-    updateContainers();
+        //mp3
+        document.addEventListener("DOMContentLoaded", () => {
+            const audioCheckbox = document.getElementById("audioCheckbox");
+            const videoCheckbox = document.getElementById("videoCheckbox");
+            const containerSelect = document.querySelector("select[name='video_container']");
 
-    // Event Listener
-    audioCheckbox.addEventListener("change", updateContainers);
-    videoCheckbox.addEventListener("change", updateContainers);
-});
+            const mp3Option = document.createElement("option");
+            mp3Option.value = "mp3";
+            mp3Option.textContent = "mp3";
 
-// Task list
-//var socket = io();
+            function updateContainers() {
+                if (audioCheckbox.checked && !videoCheckbox.checked) {
+                    // mp3 hinzufügen, falls nicht schon drin
+                    if (![...containerSelect.options].some(opt => opt.value === "mp3")) {
+                        containerSelect.appendChild(mp3Option);
+                    }
+                } else {
+                    // mp3 entfernen
+                    [...containerSelect.options].forEach(opt => {
+                        if (opt.value === "mp3") opt.remove();
+                    });
+                }
+            }
 
-var movingBullet = document.getElementById("moving-bullet");
-var lastWorkingIndex = -1;
+            // Initial check
+            updateContainers();
 
-socket.on("update_tasks", function(tasks) {
-    let list = document.getElementById("tasks");
-    list.innerHTML = "";
+            // Event Listener
+            audioCheckbox.addEventListener("change", updateContainers);
+            videoCheckbox.addEventListener("change", updateContainers);
+        });
 
-    let workingIndex = -1;
+        // Task list
+        //var socket = io();
 
-    tasks.forEach((task, index) => {
-        let li = document.createElement("li");
-        li.className = "list-group-item";
-        li.textContent = task.name;
-        li.style.color = task.status === "done" ? "green" : "white";
-        if (task.status === "done") li.style.textDecoration = "line-through";
+        var movingBullet = document.getElementById("moving-bullet");
+        var lastWorkingIndex = -1;
 
-        list.appendChild(li);
+        socket.on("update_tasks", function(tasks) {
+            let list = document.getElementById("tasks");
+            list.innerHTML = "";
 
-        if (task.status === "working") workingIndex = index;
-    });
+            let workingIndex = -1;
 
-    if (workingIndex !== -1) {
-        let li = list.children[workingIndex];
-        let bulletOffsetX = 8;
-        let bulletOffsetY = (li.offsetHeight - 12) / 2;
+            tasks.forEach((task, index) => {
+                let li = document.createElement("li");
+                li.className = "list-group-item";
+                li.textContent = task.name;
+                li.style.color = task.status === "done" ? "green" : "white";
+                if (task.status === "done") li.style.textDecoration = "line-through";
 
-        // Bullet sichtbar machen
-        movingBullet.style.opacity = 1;
-        movingBullet.style.left = bulletOffsetX + "px";
-        movingBullet.style.top = (li.offsetTop + bulletOffsetY) + "px";
+                list.appendChild(li);
 
-        // Bounce nur starten, wenn Task wechselt
-        if (workingIndex !== lastWorkingIndex) {
-            movingBullet.classList.remove("bounce");
-            void movingBullet.offsetWidth; // Force reflow
-            movingBullet.classList.add("bounce");
-        }
+                if (task.status === "working") workingIndex = index;
+            });
 
-        lastWorkingIndex = workingIndex;
-    } else {
-        // Bullet sanft verschwinden lassen
-        movingBullet.style.opacity = 0;
-        movingBullet.classList.remove("bounce");
-        lastWorkingIndex = -1;
-    }
-});
+            if (workingIndex !== -1) {
+                let li = list.children[workingIndex];
+                let bulletOffsetX = 8;
+                let bulletOffsetY = (li.offsetHeight - 12) / 2;
 
+                // Bullet sichtbar machen
+                movingBullet.style.opacity = 1;
+                movingBullet.style.left = bulletOffsetX + "px";
+                movingBullet.style.top = (li.offsetTop + bulletOffsetY) + "px";
 
+                // Bounce nur starten, wenn Task wechselt
+                if (workingIndex !== lastWorkingIndex) {
+                    movingBullet.classList.remove("bounce");
+                    void movingBullet.offsetWidth; // Force reflow
+                    movingBullet.classList.add("bounce");
+                }
 
-
-
-
-
-
-
-</script>
+                lastWorkingIndex = workingIndex;
+            } else {
+                // Bullet sanft verschwinden lassen
+                movingBullet.style.opacity = 0;
+                movingBullet.classList.remove("bounce");
+                lastWorkingIndex = -1;
+            }
+        });
+    </script>
 </body>
 </html>

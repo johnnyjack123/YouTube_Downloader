@@ -12,19 +12,34 @@
 <body class="p-4">
 
 <div class="container">
+    <div class="button-row">
 
-    <!-- Globale Navigation wie Explorer -->
-    <div class="explorer-nav d-flex align-items-center mb-4">
-        <a href="{{ url_for('home') }}" class="btn btn-gradient me-2">⬅ Back to Downloads</a>
-        {% if back_button %}
-        <a href="{{ url_for('previous_folder', path=path) }}" class="btn btn-gradient me-2">⬅ Back</a>
-        {% endif %}
-    </div>
+        <a href="{{ url_for('home') }}" class="btn icon-btn" title="Back to home">
+        <img src="{{ url_for('static', filename='icons/arrow-left.svg') }}" alt="DownloadFolder">
+    </a>
+
 
     <h1 class="app-title">Choose Folder</h1>
 
+        <a href="{{ url_for('settings_page') }}" class="btn icon-btn" title="Settings">
+        <img src="{{ url_for('static', filename='icons/settings.svg') }}" alt="Settings">
+    </a>
+    </div>
     <!-- Aktueller Pfad -->
-    <div id="currentPath" class="path-bar">{{ path }}</div>
+    <div id="currentPath" class="path-bar">
+    {% if back_button %}
+    <a href="{{ url_for('previous_folder', path=path) }}" class="btn icon-btn" title="Back">
+        <img src="{{ url_for('static', filename='icons/arrow-left.svg') }}" alt="Back">
+    </a>
+    {% endif %}
+
+    <span class="path-text">{{ path }}</span>
+
+    <a href="{{ url_for('change_download_folder', folder=folder, path=path, selection='select') }}" class="btn icon-btn choose-btn" title="Choose this folder">
+        <img src="{{ url_for('static', filename='icons/bookmark-check.svg') }}" alt="Choose folder">
+    </a>
+</div>
+
 
     <!-- Ordnerliste -->
     <ul id="folderList" class="folder-list">
@@ -39,12 +54,6 @@
         </li>
         {% endfor %}
     </ul>
-
-    <!-- Ordner-Auswahl -->
-    <div class="text-center mt-4">
-        <a href="{{ url_for('change_download_folder', folder=folder, path=path, selection='select') }}"
-           class="btn btn-gradient me-2">Choose this folder</a>
-    </div>
 
 </div>
 

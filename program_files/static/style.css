@@ -177,3 +177,375 @@ body {
     padding-left: 30px;
 }
 
+.button-row {
+  display: flex;
+  justify-content: space-between; /* links & rechts verteilen */
+  align-items: center; /* gleiche Höhe */
+  margin-bottom: 1rem; /* bisschen Abstand nach unten */
+}
+/*
+.icon-btn {
+  padding: 8px;
+  background: #007bff;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}*/
+
+.icon-btn img {
+  width: 40px;
+  height: 40px;
+  filter: invert(1); /* Farbe invertieren (schwarz -> weiß) */
+}
+
+.path-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Back/Choose Buttons an die Seiten, Path in der Mitte */
+    gap: 8px;
+    padding: 8px;
+    background-color: #180d2b;
+    border-radius: 6px;
+}
+
+.path-text {
+    flex-grow: 1;      /* Nimmt den verfügbaren Platz ein */
+    text-align: left;  /* Linksbündig */
+    margin: 0 8px;     /* Abstand zu den Buttons */
+}
+
+.choose-btn {
+    margin-left: auto; /* schiebt den Button ganz nach rechts */
+}
+
+/* style.css */
+
+/* Einheitlicher Glas-Look für Karten */
+.card {
+    background: rgba(255, 255, 255, 0.05); /* leicht transparent */
+    backdrop-filter: blur(10px); /* Glassmorphism-Effekt */
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 1rem; /* abgerundete Ecken */
+    border: 1px solid rgba(255, 255, 255, 0.15); /* feiner Rand */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25); /* sanfter Schatten */
+    color: #f1f1f1; /* Textfarbe für Kontrast */
+    padding: 1rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Hover-Effekt für Karten */
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+/* Überschriften in den Karten */
+.card-header h3 {
+    margin: 0;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+/* Listen in TODO und Queue */
+.list-group-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    color: #e0e0e0;
+    margin-bottom: 0.3rem;
+    border-radius: 0.5rem;
+}
+
+/* Bullet in TODO */
+#moving-bullet {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    background: #00ffdd;
+    border-radius: 50%;
+    position: absolute;
+    transition: all 0.3s ease;
+}
+
+/* Konsole Box */
+.console-box {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 1rem;
+    padding: 1rem;
+    height: 100%;
+    overflow-y: auto;
+    font-family: monospace;
+    color: #00ffdd;
+}
+
+/* Fortschrittsanzeige moderner */
+.custom-progress .progress-bar {
+    background: linear-gradient(90deg, #00ffdd, #0077ff);
+    height: 1.5rem;
+    font-weight: bold;
+    color: #000;
+    text-align: center;
+}
+
+/* Buttons leicht modernisieren */
+.btn-gradient {
+    background: linear-gradient(90deg, #00ffdd, #0077ff);
+    border: none;
+    color: #000;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.btn-gradient:hover {
+    background: linear-gradient(90deg, #0077ff, #00ffdd);
+    color: #fff;
+}
+
+/* Optional: scrollbar moderner */
+.card-body::-webkit-scrollbar,
+.console-box::-webkit-scrollbar {
+    width: 8px;
+}
+
+.card-body::-webkit-scrollbar-track,
+.console-box::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 1rem;
+}
+
+.card-body::-webkit-scrollbar-thumb,
+.console-box::-webkit-scrollbar-thumb {
+    background: rgba(0, 255, 221, 0.5);
+    border-radius: 1rem;
+}
+
+.card-body::-webkit-scrollbar-thumb:hover,
+.console-box::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 255, 221, 0.8);
+}
+
+.form-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    color: #f1f1f1;
+    padding: 2rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+.card-header {
+    background: transparent !important;
+    border: none !important;
+    padding: 1rem;
+}
+
+.card-header h3 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 1.2rem;
+    color: #00ffdd;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 0 0 6px rgba(0, 255, 221, 0.5);
+    position: relative;
+}
+
+.card-header h3::after {
+    content: "";
+    position: absolute;
+    bottom: -6px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, #00ffdd, transparent);
+}
+
+}
+
+.console-box {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    border-radius: 1rem;
+    padding: 1rem;
+    height: 100%;
+    overflow-y: auto;
+    font-family: "Courier New", monospace;
+    color: #00ffdd;
+    text-shadow: 0 0 5px rgba(0, 255, 221, 0.6);
+    background-image: repeating-linear-gradient(
+        to bottom,
+        rgba(0, 255, 221, 0.05) 0px,
+        rgba(0, 255, 221, 0.05) 1px,
+        transparent 2px,
+        transparent 4px
+    );
+    animation: scanline 5s linear infinite;
+}
+
+/* flackernder Effekt */
+@keyframes scanline {
+    0% { background-position: 0 0; }
+    100% { background-position: 0 4px; }
+}
+/*
+body {
+    background: linear-gradient(135deg, #0d0d0d, #1a1a2e, #16213e);
+    background-size: 300% 300%;
+    animation: gradientShift 15s ease infinite;
+    margin: 0;
+    padding: 0;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: conic-gradient(
+        from 180deg,
+        #0077ff,
+        #00ffdd,
+        #111111,
+        #0077ff
+    );
+    clip-path: polygon(20% 0%, 80% 10%, 100% 50%, 80% 90%, 20% 100%, 0% 50%);
+    opacity: 0.2;
+    z-index: -1;
+}
+
+*/
+body {
+    background: url("bg/leaf-3813777.avif") no-repeat center center fixed;
+    background-size: cover;
+    margin: 0;
+    padding: 0;
+}
+
+.loading-container {
+    width: 100%;
+    margin: 20px 0;
+    padding: 10px;
+    border-radius: 20px;
+    backdrop-filter: blur(12px);
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    overflow: hidden;
+    text-align: center;
+}
+
+.loading-bar {
+    width: 100%;
+    height: 20px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.05);
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 10px;
+    background: linear-gradient(90deg, #00ffee, #0077ff);
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    margin-top: 10px;
+    font-family: monospace;
+    font-size: 16px;
+    color: #fff;
+    text-shadow: 0 0 5px #00ffee;
+}
+
+.image-container {
+    display: flex;
+    justify-content: center; /* horizontal zentrieren */
+    align-items: center;     /* optional: vertikal zentrieren */
+}
+
+.title-image {
+    width: 25%;
+    height: auto;
+    margin-bottom: 10px;
+}
+
+/* Card Header */
+.queue-card {
+    background: rgba(255, 255, 255, 0.05); /* leichter Glaslook */
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.queue-header h3 {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    font-weight: 600;
+    color: #00ffdd;
+    text-shadow: 0 0 5px #00ffdd, 0 0 10px #00ffdd;
+    border-bottom: 1px solid rgba(0, 255, 221, 0.3);
+    padding-bottom: 0.5rem;
+}
+
+/* Liste */
+.queue-list {
+    list-style: none; /* Standard-Punkte entfernen */
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Jeder Eintrag */
+.queue-list li {
+    background: rgba(0, 0, 0, 0.3); /* dunklerer Glaslook für Einträge */
+    border-radius: 10px;
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: white;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 0.9rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+/* Hover-Effekt */
+.queue-list li:hover {
+    transform: translateX(5px);
+    box-shadow: 0 0 10px rgba(0, 255, 221, 0.6);
+}
+
+/* SVG Icon vor jedem Eintrag */
+.queue-list li::before {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    background: url('{{ url_for("static", filename="icons/youtube.svg") }}') no-repeat center;
+    background-size: contain;
+    filter: invert(1);
+    flex-shrink: 0;
+}
+
+.queue-icon {
+    width: 24px;
+    height: 24px;
+    filter: invert(1);
+    margin-right: 0.5rem;
+}
+

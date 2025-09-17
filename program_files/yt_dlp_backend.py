@@ -1,14 +1,10 @@
 import eventlet
-from PyInstaller.lib.modulegraph.modulegraph import entry
 eventlet.monkey_patch()
 from flask import Flask, request, render_template, redirect, url_for
 from flask_socketio import SocketIO
-import threading
 import os
 import json
 import logging
-import subprocess
-import sys
 from program_files.outsourced_functions import (save, read, merging_video_audio, convert_audio_to_mp3,
                                                 check_for_userdata, ensure_ffmpeg, create_task_list, open_browser, convert_command_to_text,
                                                 convert_text_to_command, search_download_folder)
@@ -29,8 +25,8 @@ video_queue = []
 
 app = Flask(
     __name__,
-    template_folder = "./templates",
-    static_folder = "./static",
+    template_folder=os.path.join(BASE_DIR, "templates"),
+    static_folder=os.path.join(BASE_DIR, "static"),
 )
 
 socketio = SocketIO(app, async_mode="eventlet", cors_allowed_origins="*")
@@ -368,3 +364,4 @@ if __name__ == '__main__':
 
 # TODO: Sinnlose prints löschen
 # TODO: README.MD aktualisieren wegen Qualitätseinstellungen und yt-dlp Library aktuell halte + automatischer Update und ffmpeg installieren
+# TODO: Pixabay Bild erwähnen in LIENSE.md
