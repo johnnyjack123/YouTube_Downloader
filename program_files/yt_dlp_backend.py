@@ -1,15 +1,19 @@
 import eventlet
+import json
+from program_files.globals import video_data
 eventlet.monkey_patch()
 from flask import Flask, request, render_template, redirect, url_for
 from flask_socketio import SocketIO
 import os
 import json
 import logging
-from program_files.outsourced_functions import (save, read, merging_video_audio, convert_audio_to_mp3,
-                                                check_for_userdata, ensure_ffmpeg, create_task_list, open_browser, convert_command_to_text,
-                                                convert_text_to_command, search_download_folder)
+import subprocess
+import sys
+from program_files.outsourced_functions import (save, read,
+                                                check_for_userdata, ensure_ffmpeg, open_browser, convert_command_to_text,
+                                                convert_text_to_command, search_download_folder, start_download, abort_download, manage_download)
 import program_files.globals as global_variables
-from program_files.yt_dlp_functions import update_yt_dlp, download_video, download_audio, start_get_name
+from program_files.yt_dlp_functions import update_yt_dlp, start_get_name
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Directory of this file
@@ -140,154 +144,16 @@ def video_settings():
 
         if not global_variables.is_downloading:
             print("start")
-            start_download()
+            #start_download()
+            socketio.start_background_task(manage_download,)
+            console("Started Process.")
     return redirect(url_for("home"))
-
-def start_download():
-    global download_thread
-    if not download_thread:
-        download_thread = True
-        socketio.start_background_task(download)
-
-def download():
-    console("Preparing download")
-    try:
-        while True:  # Endlosschleife, solange es noch Videos gibt
-            if not global_variables.video_data:
-                break  # Queue leer → beenden
-            global_variables.is_downloading = True
-            current_video = global_variables.video_data.pop(0)
-
-            video_task = "pending"
-            audio_task = "pending"
-            merge_task = "pending"
-            global_variables.task_list = create_task_list(current_video, video_task, audio_task, merge_task)
-            update_tasks()
-
-            emit_queue()
-            logging.basicConfig(filename="debug.log", level=logging.DEBUG)
-            logging.debug(global_variables.video_data)
-
-            socketio.emit('video_list', {
-                "queue": global_variables.video_data,
-                "current": current_video
-            })
-
-            video_url = current_video["video_url"]
-            video_resolution = current_video["video_resolution"]
-            video_container = current_video["video_container"]
-            video_quality = current_video["video_quality"]
-            audio_quality = current_video["audio_quality"]
-            custom_resolution = current_video["custom_resolution_checkbox"]
-            video_checkbox = current_video["video_checkbox"]
-            audio_checkbox = current_video["audio_checkbox"]
-
-            if video_url:
-                socketio.emit('progress', {
-                    'message': '⏳ Download processing...'
-                })
-
-                download_folder = read("download_folder")
-                if not os.path.exists(download_folder):
-                    return "Not valid folder"
-
-                if custom_resolution == "yes":
-                    if video_checkbox and not audio_checkbox:
-                        video_input = 'bv[height<=' + video_resolution + ']/best'
-                    elif video_checkbox and audio_checkbox:
-                        video_input = 'bv[height<=' + video_resolution + ']'
-                        audio_input = 'ba[height<=' + video_resolution + ']/best' # TODO: Fallback dynamisch machen
-                    elif not video_checkbox and audio_checkbox:
-                        #audio_input = 'ba[height<=' + video_resolution + ']'
-                        audio_input = 'bestaudio'
-                    else:
-                        console("[Error] No stream selected.")
-                else:
-                    if video_checkbox and not audio_checkbox:
-                        video_input = video_quality
-                    elif video_checkbox and audio_checkbox:
-                        video_input = video_quality
-                        audio_input = audio_quality
-                    elif not video_checkbox and audio_checkbox:
-                        audio_input = audio_quality
-                    else:
-                        console("[Error] No stream selected.")
-                try:
-                    if video_checkbox:
-                        video_task = "working"
-                        global_variables.task_list = create_task_list(current_video, video_task, audio_task, merge_task)
-                        update_tasks()
-                        global_variables.download_type = "video"
-                        console(f"[{global_variables.download_type}] Preparing to download {global_variables.download_type}.")
-
-                        video_file = download_video(video_input, download_folder, video_url)
-
-                        global_variables.state_logger = True # So that logger knows, when new video starts, helps to display "Download" only once per video
-                        console(f"[{global_variables.download_type}]Done downloading {global_variables.download_type}.")
-                        video_task = "done"
-                        global_variables.task_list = create_task_list(current_video, video_task, audio_task, merge_task)
-                        update_tasks()
-
-                    if audio_checkbox:
-                        audio_task = "working"
-                        global_variables.task_list = create_task_list(current_video, video_task, audio_task, merge_task)
-                        update_tasks()
-
-                        global_variables.download_type = "audio"
-                        console(f"[{global_variables.download_type}] Preparing to download {global_variables.download_type}.")
-
-                        audio_file = download_audio(audio_input, download_folder, video_url)
-
-                        global_variables.state_logger = True # So that logger knows, when new video starts, helps to display "Download" only once per video
-                        console(f"[{global_variables.download_type}]Done downloading {global_variables.download_type}.")
-                        audio_task = "done"
-                        global_variables.task_list = create_task_list(current_video, video_task, audio_task, merge_task)
-                        update_tasks()
-
-                    file_data = read("file")
-                    merge = file_data["auto_merge"]
-                    if video_checkbox and audio_checkbox and merge:
-                        merge_task = "working"
-                        global_variables.task_list = create_task_list(current_video, video_task, audio_task, merge_task)
-                        update_tasks()
-                        console("Merging video and audio stream.")
-                        output_file = video_file + "_merged." + video_container
-                        result = merging_video_audio(video_file, audio_file, output_file)
-                        if result:
-                            console("Merging successful.")
-                            merge_task = "done"
-                            global_variables.task_list = create_task_list(current_video, video_task, audio_task, merge_task)
-                            update_tasks()
-                            os.remove(video_file)
-                            os.remove(audio_file)
-                        else:
-                            print("Merging failed. Downloaded video and audio are still storaged in your download folder.")
-                            console("Merging failed. Downloaded video and audio are still storaged in your download folder.")
-
-                    elif not video_checkbox and audio_checkbox and video_container == "mp3": # Exception for mp3 Format, so you can download for example music as a mp3 file
-                        console("Convert audio in mp3...")
-                        output_file = audio_file + "_merged." + video_container
-                        result = convert_audio_to_mp3(audio_file, output_file)
-                        if result:
-                            console("Merging successful.")
-                            os.remove(audio_file)
-                        else:
-                            print(
-                                "Merging failed. Downloaded video and audio are still storaged in your download folder.")
-                            console(
-                                "Merging failed. Downloaded video and audio are still storaged in your download folder.")
-
-                    progress("finished", False, False, False)
-
-                except Exception as e:
-                    print("Download failed:", e)
-    finally:
-        download_thread = False
-        global_variables.is_downloading = False
 
 @app.route('/abort', methods=["GET", "POST"])
 def abort():
     global_variables.abort_flag = True
+    console("Abort download.")
+    abort_download()
     return redirect(url_for("home"))
 
 @app.route('/choose_download_folder_page', methods=["GET", "POST"])
@@ -365,3 +231,7 @@ if __name__ == '__main__':
 # TODO: Sinnlose prints löschen
 # TODO: README.MD aktualisieren wegen Qualitätseinstellungen und yt-dlp Library aktuell halte + automatischer Update und ffmpeg installieren
 # TODO: Pixabay Bild erwähnen in LIENSE.md
+# TODO: Console in Browser scrollbar machen
+# TODO: Standard hintergrund dunkel machen
+# TODO: In Console mehr Konsistenz mit [video]...
+# TODO: Überprüfen, ob Thread wirklich beendet wurde

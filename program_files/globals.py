@@ -11,3 +11,4 @@ quality_map = {
     "best": "Average",
     "worstvideo": "Worst"
 }
+

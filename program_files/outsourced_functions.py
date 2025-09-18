@@ -4,15 +4,18 @@ import subprocess
 import os
 import shutil
 import sys
-
-import program_files.globals as globals
-from program_files.sockets import progress
+import json
+import program_files.globals as global_variables
+from program_files.sockets import progress, console, update_tasks, emit_queue
 import webbrowser
+import threading
+
+download_process = None
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Ordner, wo die aktuelle Datei liegt
 userdata_file = os.path.join(BASE_DIR, "..", "userdata.json")
 
-video_quality_cmd = list(globals.quality_map.keys())
+video_quality_cmd = list(global_variables.quality_map.keys())
 
 def sort_formats(video_url, video_resolution):
     # Check if quality is available
@@ -91,126 +94,6 @@ def get_frame_count_estimate(video_file):
     duration = float(duration_str)
 
     return int(duration * fps)
-
-def merging_video_audio(video_file, audio_file, output_file):
-    print("Merging")
-
-    # --- Audio codec check ---
-    result = subprocess.run([
-        "ffprobe", "-v", "error",
-        "-select_streams", "a:0",
-        "-show_entries", "stream=codec_name",
-        "-of", "default=noprint_wrappers=1:nokey=1",
-        audio_file
-    ], capture_output=True, text=True)
-    audio_codec = result.stdout.strip()
-
-    # --- Video codec check ---
-    result = subprocess.run([
-        "ffprobe", "-v", "error",
-        "-select_streams", "v:0",
-        "-show_entries", "stream=codec_name",
-        "-of", "default=noprint_wrappers=1:nokey=1",
-        video_file
-    ], capture_output=True, text=True)
-    video_codec = result.stdout.strip()
-
-    print(f"Audio codec detected: {audio_codec}")
-    print(f"Video codec detected: {video_codec}")
-    print("Start merging.")
-
-    # --- Default: try copy ---
-    audio_option = "copy" if audio_codec.lower() == "aac" else "aac"
-    video_option = "copy"
-
-    # --- Container compatibility check ---
-    if output_file.lower().endswith(".mov"):
-        # MOV cannot handle VP9 or AV1 reliably
-        if video_codec.lower() in ["vp9", "av1"]:
-            print(f"Video codec {video_codec} not supported in MOV, re-encoding to H.264")
-            video_option = "libx264"
-        if audio_codec.lower() != "aac":
-            print(f"Audio codec {audio_codec} not supported in MOV, re-encoding to AAC")
-            audio_option = "aac"
-
-    total_frames = get_frame_count_estimate(video_file)
-
-    cmd = [
-        "ffmpeg", "-y",
-        "-i", video_file,
-        "-i", audio_file,
-        "-c:v", video_option,
-        "-c:a", audio_option,
-        "-progress", "pipe:1",  # ← FFmpeg writes progress to stdout
-        "-nostats",  # supress logs in console
-        output_file
-    ]
-
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True)
-
-    for line in process.stdout:
-        line = line.strip()
-        if line.startswith("frame="):
-            current_frame = int(line.split("=")[1])
-            percent = round((current_frame / total_frames) * 100, 1)
-            progress("downloading", str(percent) + "%", 0, 0)
-            sys.stdout.write(f"\rProgress: {percent:.2f}% ({current_frame}/{total_frames})")
-            sys.stdout.flush()
-
-    process.wait()
-    if process.returncode != 0:
-        print("\nMerging failed!")
-        return False
-    else:
-        print("\nMerging successful.")
-        return True
-
-
-def convert_audio_to_mp3(input_file, output_file):
-    print("Converting audio to MP3...")
-
-    # --- Check codec ---
-    result = subprocess.run([
-        "ffprobe", "-v", "error",
-        "-select_streams", "a:0",
-        "-show_entries", "stream=codec_name",
-        "-of", "default=noprint_wrappers=1:nokey=1",
-        input_file
-    ], capture_output=True, text=True)
-
-    audio_codec = result.stdout.strip().lower()
-    print(f"Detected audio codec: {audio_codec}")
-
-    # --- Decide conversion method ---
-    if audio_codec == "mp3":
-        # Already MP3 → just copy
-        cmd = [
-            "ffmpeg", "-y",
-            "-i", input_file,
-            "-c:a", "copy",
-            output_file
-        ]
-        print("Audio is already MP3, using stream copy.")
-    else:
-        # Not MP3 → re-encode to MP3
-        cmd = [
-            "ffmpeg", "-y",
-            "-i", input_file,
-            "-c:a", "libmp3lame",  # best MP3 encoder
-            "-b:a", "192k",        # standard bitrate
-            output_file
-        ]
-        print(f"Re-encoding audio ({audio_codec}) to MP3.")
-
-    # --- Run conversion ---
-    result = subprocess.run(cmd)
-
-    if result.returncode == 0:
-        print(f"Audio successfully saved as {output_file}")
-        return True
-    else:
-        print("Audio conversion failed")
-        return False
 
 def save(entry, video_data):
     with open(userdata_file, "r", encoding="utf-8") as file:
@@ -305,7 +188,7 @@ def open_browser():
     return
 
 def convert_text_to_command(description, video_checkbox, audio_checkbox):
-    reverse_map = {v: k for k, v in globals.quality_map.items()}
+    reverse_map = {v: k for k, v in global_variables.quality_map.items()}
 
     cmd_video = False
     cmd_audio = False
@@ -329,8 +212,8 @@ def convert_text_to_command(description, video_checkbox, audio_checkbox):
 def convert_command_to_text(cmd_list):
     text = []
     for entry in cmd_list:
-        if entry in globals.quality_map:
-            text.append(globals.quality_map[entry])
+        if entry in global_variables.quality_map:
+            text.append(global_variables.quality_map[entry])
         else:
             text.append(entry)  # fallback: gib original zurück
     return text
@@ -345,3 +228,53 @@ def search_download_folder(folder, path):
         if os.path.isdir(os.path.join(path, f)) and not f.startswith(".")  # hidden Unix-directories
     ]
     return folders, path
+
+def start_download():
+    manage_download_thread = threading.Thread(target=manage_download, daemon=True)
+    manage_download_thread.start()
+    return
+
+def manage_download():
+    global download_process
+    global_variables.is_downloading = True
+    while global_variables.video_data:
+        video_entry = global_variables.video_data.pop(0)
+        video_json = json.dumps(video_entry)
+        download_process = subprocess.Popen(
+            [sys.executable, "-u", "program_files/download_and_merge.py", video_json],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,  # Fehler landen auch im stdout
+            text=True,
+            bufsize=1
+        )
+
+        for line in download_process.stdout:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                data = json.loads(line)
+                if data["function"] == "task_list":
+                    global_variables.task_list = create_task_list(data["args"][0], data["args"][1], data["args"][2], data["args"][3])
+                    update_tasks()
+                elif data["function"] == "progress":
+                    progress(data["args"][0], data["args"][1], data["args"][2], data["args"][3])
+                elif data["function"] == "download_type":
+                    global_variables.download_type = data["args"]
+                elif data["function"] == "state_logger":
+                    global_variables.state_logger = data["args"]
+                elif data["function"] == "console":
+                    console(data["args"])
+                else:
+                    print(data)
+            except json.JSONDecodeError:
+                print("Subprocess output:", line)
+                #console("Subprocess output: " + str(line)) <-- uncomment for error messages in the web console
+
+        download_process.wait()
+        print("Prozess beendet mit Code", download_process.returncode)
+    global_variables.is_downloading = False
+
+def abort_download():
+    global download_process
+    download_process.terminate()

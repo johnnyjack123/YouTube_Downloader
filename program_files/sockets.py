@@ -60,3 +60,9 @@ def progress(status, percent, speed, eta):
             'speed': '0',
             'eta': '0',
             'message': 'Finished!'})
+    if status == "preparing":
+        socketio.emit('progress', {
+            'percent': '0%',
+            'speed': '0',
+            'eta': '0',
+            'message': 'Preparing...'})
