@@ -510,42 +510,31 @@ body {
     gap: 0.5rem;
 }
 
-/* Jeder Eintrag */
+.queue-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* Farbe über den Text steuern */
 .queue-list li {
-    background: rgba(0, 0, 0, 0.3); /* dunklerer Glaslook für Einträge */
+    background: rgba(0, 0, 0, 0.3);
     border-radius: 10px;
     padding: 0.5rem 1rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: white;
+    color: white;  /* -> Icon wird automatisch weiß */
     font-family: 'Segoe UI', sans-serif;
     font-size: 0.9rem;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: color 0.2s, transform 0.2s, box-shadow 0.2s;
 }
 
-/* Hover-Effekt */
 .queue-list li:hover {
+    color: #00ffdd; /* -> Icon färbt sich mit */
     transform: translateX(5px);
     box-shadow: 0 0 10px rgba(0, 255, 221, 0.6);
 }
 
-/* SVG Icon vor jedem Eintrag */
-.queue-list li::before {
-    content: '';
-    display: inline-block;
-    width: 24px;
-    height: 24px;
-    background: url('{{ url_for("static", filename="icons/youtube.svg") }}') no-repeat center;
-    background-size: contain;
-    filter: invert(1);
-    flex-shrink: 0;
-}
-
-.queue-icon {
-    width: 24px;
-    height: 24px;
-    filter: invert(1);
-    margin-right: 0.5rem;
-}
 
