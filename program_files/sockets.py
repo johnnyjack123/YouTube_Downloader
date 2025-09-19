@@ -11,7 +11,7 @@ def init_socket(socketio_instance):
     def handle_connect():
         #global task_list
         print("Client connected")
-        console("Client connected")
+        console("Client connected", "python")
         emit_queue()
         update_tasks()
 
@@ -26,7 +26,7 @@ def update_title_in_queue(title, video_url):
                 video["video_name"] = title
                 emit_queue()
 
-def console(command):
+def console(command, source):
     #global console_socket
     if command == "Client connected":
         if "Client connected" in global_variables.console_socket:
@@ -34,9 +34,10 @@ def console(command):
     elif command == "[yt-dlp]: Testing formats":
         if "[yt-dlp]: Testing formats" in global_variables.console_socket:
             return
-    socketio.emit("console", command)
+    print(f"[console] [{source}] {command}")
+    socketio.emit("console", f"[{source}] {command}")
     socketio.sleep(0)
-    global_variables.console_socket.append(command)
+    global_variables.console_socket.append(f"[{source}] {command}")
     return
 
 def emit_queue():

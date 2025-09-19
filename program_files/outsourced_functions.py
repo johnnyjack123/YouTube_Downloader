@@ -99,7 +99,10 @@ def get_frame_count_estimate(video_file):
 def save(entry, video_data):
     with open(userdata_file, "r", encoding="utf-8") as file:
         data = json.load(file)
-        data[entry] = video_data
+        if entry == "whole_file":
+            data = video_data
+        else:
+            data[entry] = video_data
     with open(userdata_file, "w", encoding="utf-8") as file:
         json.dump(data, file, ensure_ascii=False, indent=4)
     return
@@ -269,7 +272,9 @@ def manage_download():
                     elif data["function"] == "state_logger":
                         global_variables.state_logger = data["args"]
                     elif data["function"] == "console":
-                        console(data["args"])
+                        cmd = data["args"][0]
+                        source = data["args"][1]
+                        console(cmd, source)
                     else:
                         print(data)
                 except json.JSONDecodeError:

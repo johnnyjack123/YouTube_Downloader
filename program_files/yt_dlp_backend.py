@@ -1,7 +1,7 @@
-import eventlet
+#import eventlet
 import json
 from program_files.globals import video_data
-eventlet.monkey_patch()
+#eventlet.monkey_patch()
 from flask import Flask, request, render_template, redirect, url_for
 from flask_socketio import SocketIO
 import os
@@ -15,7 +15,15 @@ from program_files.outsourced_functions import (save, read,
 import program_files.globals as global_variables
 from program_files.yt_dlp_functions import update_yt_dlp, start_get_name
 import time
+from datetime import datetime
+import threading
 
+logging.basicConfig(
+    filename="program_files/debug.log",
+    level=logging.DEBUG,
+    format="%(asctime)s.%(msecs)03d [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Directory of this file
 userdata_file = os.path.join(BASE_DIR, "..", "userdata.json")
@@ -34,13 +42,20 @@ app = Flask(
     static_folder=os.path.join(BASE_DIR, "static"),
 )
 
-socketio = SocketIO(app, async_mode="eventlet", cors_allowed_origins="*")
+socketio = SocketIO(app, async_mode="threading", cors_allowed_origins="*")
 import program_files.sockets as sockets
 from program_files.sockets import init_socket, update_tasks, update_title_in_queue, console, emit_queue, progress
 sockets.init_socket(socketio)
 
+def log_event(msg: str):
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    print(f"{now} | {msg}")   # geht in die Konsole
+    logging.debug(msg)        # geht in die Datei
+
 @app.route('/', methods=["GET", "POST"])
-def home():
+def home(): # TODO: Überprüfen, ob datei durch irgendwas gestperrt ist -> Seite lädt ewig nicht
+    print("Start home")
+    log_event("Start home")
     video_quality = ["bestvideo", "best", "worstvideo"]
     video_resolution = ["720", "1080", "1920", "1440", "2160"]
     video_container = ["mp4", "mov", "mkv", "webm", "avi"]
@@ -65,8 +80,10 @@ def home():
     checkbox = read("custom_resolution_checkbox")
     video_checkbox = read("video_checkbox")
     audio_checkbox = read("audio_checkbox")
-    return render_template('index.html',
-                           download_folder=download_folder,
+    print("End home")
+    log_event("End home")
+    log_event("Before render_template")
+    html = render_template("index.html", download_folder=download_folder,
                            video_quality=video_quality,
                            video_resolution=video_resolution,
                            video_container=video_container,
@@ -74,20 +91,36 @@ def home():
                            console_socket=global_variables.console_socket,
                            video_checkbox=video_checkbox,
                            audio_checkbox=audio_checkbox)
+    log_event("After render_template")
+    return html
+"""return render_template('index.html',
+                       download_folder=download_folder,
+                       video_quality=video_quality,
+                       video_resolution=video_resolution,
+                       video_container=video_container,
+                       checkbox=checkbox,
+                       console_socket=global_variables.console_socket,
+                       video_checkbox=video_checkbox,
+                       audio_checkbox=audio_checkbox)"""
 
 @app.route('/video_settings', methods=["GET", "POST"])
 def video_settings():
+    print("Start settings")
+    log_event("Start settings")
     custom_resolution = request.form.get("custom_resolution")
     video_checkbox = request.form.get("video_checkbox")
     audio_checkbox = request.form.get("audio_checkbox")
+    file = read("file")
     if custom_resolution == "yes":
         video_resolution = request.form.get("video_resolution")
         if not video_resolution:
             return "No resolution set"
         #video_resolution_command = 'bv[height<=' + video_resolution + ']+ba' #TODO: Dynamisch mit worst audio, audio wird aber separat in zweitem download herunter geladen
-        save("video_resolution", video_resolution)
+        file["video_resolution"] = video_resolution
+        #save("video_resolution", video_resolution)
         #save("video_resolution_command", video_resolution_command)
-        save("custom_resolution_checkbox", True)
+        file["custom_resolution_checkbox"] = True
+        #save("custom_resolution_checkbox", True)
         #video_resolution = video_resolution_command
         video_quality = False
         audio_quality = False
@@ -96,32 +129,40 @@ def video_settings():
 
         video_quality, audio_quality = convert_text_to_command(video_quality, video_checkbox, audio_checkbox)
         print("Audio Quality: " + audio_quality)
+        file["custom_resolution_checkbox"] = False
         save("custom_resolution_checkbox", False)
 
         #video_resolution = video_quality + "+" + audio_quality
         video_resolution = False
         if video_quality:
-            save("video_quality", video_quality)
+            file["video_quality"] = video_resolution
+            #save("video_quality", video_quality)
 
     if video_checkbox == "yes":
-        save("video_checkbox", True)
+        file["video_checkbox"] = True
+        #save("video_checkbox", True)
     else:
-        save("video_checkbox", False)
+        file["video_checkbox"] = False
+        #save("video_checkbox", False)
 
     if audio_checkbox == "yes":
-        save("audio_checkbox", True)
+        file["audio_checkbox"] = True
+        #save("audio_checkbox", True)
     else:
-        save("audio_checkbox", False)
+        file["audio_checkbox"] = False
+        #save("audio_checkbox", False)
 
     video_container = request.form.get("video_container")
     if not video_container == "mp3":
+        file["video_container"] = video_container
         save("video_container", video_container)
     video_url = request.form.get("video_url")
 
+    save("whole_file", file)
     found = next((v for v in global_variables.video_data if v["video_url"] == video_url), None)
 
     if found:
-        console("Video already in Queue.")
+        console("Video already in Queue.", "python")
     else:
         entry = {
             "video_url": video_url,
@@ -138,21 +179,22 @@ def video_settings():
         global_variables.video_data.append(entry)
         start_get_name(video_url)
         emit_queue()
-        logging.basicConfig(filename="debug.log", level=logging.DEBUG)
-        logging.debug(global_variables.video_data)
-        logging.debug(f"Saving video_quality = {video_quality!r} (type={type(video_quality)})")
+        #logging.debug(global_variables.video_data)
+        #logging.debug(f"Saving video_quality = {video_quality!r} (type={type(video_quality)})")
 
-        if not global_variables.is_downloading:
-            print("start")
+        #if not global_variables.is_downloading:
+            #print("start")
             #start_download()
             #socketio.start_background_task(lambda: time.sleep(0.1) or manage_download())
-            console("Started Process.")
+            #console("Started Process.")
+        print("End settings")
+        log_event("End settings")
     return redirect(url_for("home"))
 
 @app.route('/abort', methods=["GET", "POST"])
 def abort():
     global_variables.abort_flag = True
-    console("Abort download.")
+    console("Abort download.", "python")
     abort_download()
     return redirect(url_for("home"))
 
@@ -224,7 +266,8 @@ if __name__ == '__main__':
         if data["open_browser"] == "yes":
             open_browser()
         update_yt_dlp()
-        socketio.start_background_task(manage_download)
+        #socketio.start_background_task(manage_download)
+        start_download()
         print("Started background task")
         socketio.run(app, host="0.0.0.0", port=5000, debug=True)
 
@@ -240,3 +283,5 @@ if __name__ == '__main__':
 # TODO: Standard hintergrund dunkel machen
 # TODO: In Console mehr Konsistenz mit [video]...
 # TODO: Überprüfen, ob Thread wirklich beendet wurde
+# TODO: Ladebalken in den Bereich von TODO Liste, wo noch Platz ist
+# TODO: Downloading REssources bei video download anzeigen lassen, bug
