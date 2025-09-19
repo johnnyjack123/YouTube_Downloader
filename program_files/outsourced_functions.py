@@ -9,6 +9,7 @@ import program_files.globals as global_variables
 from program_files.sockets import progress, console, update_tasks, emit_queue
 import webbrowser
 import threading
+import time
 
 download_process = None
 
@@ -236,44 +237,50 @@ def start_download():
 
 def manage_download():
     global download_process
-    global_variables.is_downloading = True
-    while global_variables.video_data:
-        video_entry = global_variables.video_data.pop(0)
-        video_json = json.dumps(video_entry)
-        download_process = subprocess.Popen(
-            [sys.executable, "-u", "program_files/download_and_merge.py", video_json],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,  # Fehler landen auch im stdout
-            text=True,
-            bufsize=1
-        )
+    print("Manage download.")
+    while True:
+        if global_variables.video_data:
 
-        for line in download_process.stdout:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                data = json.loads(line)
-                if data["function"] == "task_list":
-                    global_variables.task_list = create_task_list(data["args"][0], data["args"][1], data["args"][2], data["args"][3])
-                    update_tasks()
-                elif data["function"] == "progress":
-                    progress(data["args"][0], data["args"][1], data["args"][2], data["args"][3])
-                elif data["function"] == "download_type":
-                    global_variables.download_type = data["args"]
-                elif data["function"] == "state_logger":
-                    global_variables.state_logger = data["args"]
-                elif data["function"] == "console":
-                    console(data["args"])
-                else:
-                    print(data)
-            except json.JSONDecodeError:
-                print("Subprocess output:", line)
-                #console("Subprocess output: " + str(line)) <-- uncomment for error messages in the web console
+            global_variables.is_downloading = True
+            #while global_variables.video_data:
+            video_entry = global_variables.video_data.pop(0)
+            video_json = json.dumps(video_entry)
+            download_process = subprocess.Popen(
+                [sys.executable, "-u", "program_files/download_and_merge.py", video_json],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,  # Fehler landen auch im stdout
+                text=True,
+                bufsize=1
+            )
 
-        download_process.wait()
-        print("Prozess beendet mit Code", download_process.returncode)
-    global_variables.is_downloading = False
+            for line in download_process.stdout:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    data = json.loads(line)
+                    if data["function"] == "task_list":
+                        global_variables.task_list = create_task_list(data["args"][0], data["args"][1], data["args"][2], data["args"][3])
+                        update_tasks()
+                    elif data["function"] == "progress":
+                        progress(data["args"][0], data["args"][1], data["args"][2], data["args"][3])
+                    elif data["function"] == "download_type":
+                        global_variables.download_type = data["args"]
+                    elif data["function"] == "state_logger":
+                        global_variables.state_logger = data["args"]
+                    elif data["function"] == "console":
+                        console(data["args"])
+                    else:
+                        print(data)
+                except json.JSONDecodeError:
+                    print("Subprocess output:", line)
+                    #console("Subprocess output: " + str(line)) <-- uncomment for error messages in the web console
+
+            download_process.wait()
+            print("Prozess beendet mit Code", download_process.returncode)
+            global_variables.is_downloading = False
+        else:
+            time.sleep(0.2)
 
 def abort_download():
     global download_process

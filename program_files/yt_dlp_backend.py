@@ -14,6 +14,7 @@ from program_files.outsourced_functions import (save, read,
                                                 convert_text_to_command, search_download_folder, start_download, abort_download, manage_download)
 import program_files.globals as global_variables
 from program_files.yt_dlp_functions import update_yt_dlp, start_get_name
+import time
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Directory of this file
@@ -83,7 +84,7 @@ def video_settings():
         video_resolution = request.form.get("video_resolution")
         if not video_resolution:
             return "No resolution set"
-        video_resolution_command = 'bv[height<=' + video_resolution + ']+ba' #TODO: Dynamisch mit worst audio, audio wird aber separat in zweitem download herunter geladen
+        #video_resolution_command = 'bv[height<=' + video_resolution + ']+ba' #TODO: Dynamisch mit worst audio, audio wird aber separat in zweitem download herunter geladen
         save("video_resolution", video_resolution)
         #save("video_resolution_command", video_resolution_command)
         save("custom_resolution_checkbox", True)
@@ -101,7 +102,6 @@ def video_settings():
         video_resolution = False
         if video_quality:
             save("video_quality", video_quality)
-        logging.debug(f"Saving video_quality = {video_quality!r} (type={type(video_quality)})")
 
     if video_checkbox == "yes":
         save("video_checkbox", True)
@@ -145,7 +145,7 @@ def video_settings():
         if not global_variables.is_downloading:
             print("start")
             #start_download()
-            socketio.start_background_task(manage_download,)
+            #socketio.start_background_task(lambda: time.sleep(0.1) or manage_download())
             console("Started Process.")
     return redirect(url_for("home"))
 
@@ -216,13 +216,18 @@ def settings():
 
 if __name__ == '__main__':
     result = ensure_ffmpeg()
+    print("test")
     if result == "run":
+        print("test2")
         check_for_userdata()
         data = read("file")
         if data["open_browser"] == "yes":
             open_browser()
         update_yt_dlp()
+        socketio.start_background_task(manage_download)
+        print("Started background task")
         socketio.run(app, host="0.0.0.0", port=5000, debug=True)
+
     elif result == "restart":
         print("Please restart this python script and the whole command line.")
     else:
