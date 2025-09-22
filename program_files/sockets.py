@@ -14,6 +14,7 @@ def init_socket(socketio_instance):
         console("Client connected", "python")
         emit_queue()
         update_tasks()
+        update_current_video(global_variables.current_name)
 
 def update_tasks():
     socketio.emit("update_tasks", global_variables.task_list)
@@ -25,6 +26,10 @@ def update_title_in_queue(title, video_url):
             if video:
                 video["video_name"] = title
                 emit_queue()
+
+def update_current_video(title):
+    socketio.emit("current_video", title)
+    socketio.sleep(0)
 
 def console(command, source):
     #global console_socket

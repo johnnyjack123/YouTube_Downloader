@@ -11,8 +11,19 @@
 <body class="p-4">
 
 <div class="container">
-    <h1 class="app-title">Settings</h1>
+<div class="button-row">
 
+        <a href="{{ url_for('home') }}" class="btn icon-btn" title="Back to home">
+        <img src="{{ url_for('static', filename='icons/arrow-left.svg') }}" alt="DownloadFolder">
+    </a>
+
+
+    <h1 class="app-title">Choose a download location</h1>
+
+        <a href="{{ url_for('settings_page') }}" class="btn icon-btn" title="Settings">
+        <img src="{{ url_for('static', filename='icons/settings.svg') }}" alt="Settings">
+    </a>
+    </div>
     <form action="{{ url_for('settings') }}" method="POST" class="mb-4 form-card">
 
         <!-- Browser Window -->
@@ -62,9 +73,6 @@
         <input type="submit" class="btn btn-info w-100 btn-download" value="Save settings">
     </form>
 
-    <a href="{{ url_for('home') }}" class="btn btn-gradient">
-        Back to Home
-    </a>
 </div>
 
 </body>

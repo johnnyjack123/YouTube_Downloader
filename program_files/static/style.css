@@ -1,21 +1,16 @@
 /* Globales Layout */
-body {
-    font-family: 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-    min-height: 100vh;
-    color: #f1f1f1;
-}
 
 /* Titel */
 .app-title {
     text-align: center;
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin-bottom: 2rem;
-    letter-spacing: 1px;
-    background: linear-gradient(90deg, #ff4b1f, #1fddff);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    margin: 0;
+    font-weight: 600;
+    font-size: 2rem;
+    color: #00ffdd;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 0 0 6px rgba(0, 255, 221, 0.5);
+    position: relative;
 }
 
 /* Karten-Style für Form */
@@ -68,14 +63,19 @@ body {
 
 /* Aktueller Pfad-Balken */
 .path-bar {
-    background: rgba(50, 50, 50, 0.9);
-    padding: 0.8rem 1rem;
+    background: rgba(255, 255, 255, 0.05) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
     border-radius: 0.6rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 0.8rem 1rem;
     margin-bottom: 2rem;
     font-weight: 600;
     font-size: 1.1rem;
     word-break: break-all;
+    color: #f1f1f1;
 }
+
 
 /* Folder-Grid */
 .folder-list {
@@ -113,7 +113,7 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-
+/*
 .console-box {
     border-color: black;
     border-width: 2px;
@@ -129,10 +129,8 @@ body {
     flex: 1;
     width: 100%
 }
+*/
 
-.console {
-
-}
 
 .console-text {
     color: #04de1a;
@@ -183,15 +181,6 @@ body {
   align-items: center; /* gleiche Höhe */
   margin-bottom: 1rem; /* bisschen Abstand nach unten */
 }
-/*
-.icon-btn {
-  padding: 8px;
-  background: #007bff;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}*/
 
 .icon-btn img {
   width: 40px;
@@ -268,6 +257,7 @@ body {
 }
 
 /* Konsole Box */
+
 .console-box {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 1rem;
@@ -367,9 +357,7 @@ body {
     height: 2px;
     background: linear-gradient(90deg, #00ffdd, transparent);
 }
-
-}
-
+/*
 .console-box {
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(5px);
@@ -388,45 +376,14 @@ body {
         transparent 4px
     );
     animation: scanline 5s linear infinite;
-}
+}*/
 
 /* flackernder Effekt */
 @keyframes scanline {
     0% { background-position: 0 0; }
     100% { background-position: 0 4px; }
 }
-/*
-body {
-    background: linear-gradient(135deg, #0d0d0d, #1a1a2e, #16213e);
-    background-size: 300% 300%;
-    animation: gradientShift 15s ease infinite;
-    margin: 0;
-    padding: 0;
-}
 
-@keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-body::before {
-    content: "";
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: conic-gradient(
-        from 180deg,
-        #0077ff,
-        #00ffdd,
-        #111111,
-        #0077ff
-    );
-    clip-path: polygon(20% 0%, 80% 10%, 100% 50%, 80% 90%, 20% 100%, 0% 50%);
-    opacity: 0.2;
-    z-index: -1;
-}
-
-*/
 body {
     background: url("bg/leaf-3813777.avif") no-repeat center center fixed;
     background-size: cover;
@@ -537,4 +494,8 @@ body {
     box-shadow: 0 0 10px rgba(0, 255, 221, 0.6);
 }
 
-
+.equal-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}

@@ -6,7 +6,7 @@ import shutil
 import sys
 import json
 import program_files.globals as global_variables
-from program_files.sockets import progress, console, update_tasks, emit_queue
+from program_files.sockets import progress, console, update_tasks, emit_queue, update_current_video
 import webbrowser
 import threading
 import time
@@ -245,9 +245,13 @@ def manage_download():
         if global_variables.video_data:
 
             global_variables.is_downloading = True
-            #while global_variables.video_data:
             video_entry = global_variables.video_data.pop(0)
+            emit_queue()
+            global_variables.current_video_url = video_entry["video_url"]
+            update_current_video(video_entry["video_name"])
+            global_variables.current_name = video_entry["video_name"]
             video_json = json.dumps(video_entry)
+
             download_process = subprocess.Popen(
                 [sys.executable, "-u", "program_files/download_and_merge.py", video_json],
                 stdout=subprocess.PIPE,

@@ -30,33 +30,51 @@
     </div>
 
     <!-- Grid für drei Spalten -->
-    <div class="d-flex" style="gap:1rem; height: calc(100vh - 120px);">
-
+<div class="d-flex" style="gap:1rem; height: calc(100vh - 120px);">
         <!-- Linke Spalte -->
-        <div class="d-flex flex-column" style="flex:1; gap:1rem;">
-            <!-- Download task list -->
-            <div class="card flex-fill" style="overflow-y:auto;">
-                <div class="card-header"><h3>Download TODO</h3></div>
-                <div class="card-body" style="overflow-y:auto; height:50%;">
-                    <ul id="tasks" class="list-group mb-0"></ul>
-                    <span id="moving-bullet"></span>
-                </div>
-            </div>
-
-            <!-- Download Queue -->
-            <div class="card flex-fill queue-card" style="overflow-y:auto;">
-    <div class="card-header queue-header">
-        <h3>Download Queue</h3>
+         <div class="d-flex flex-column equal-col">
+        <!-- Download task list -->
+             <div class="card now-downloading mb-3">
+  <div class="card-header">
+    <h3>Now Downloading</h3>
+  </div>
+  <div class="card-body">
+    <div id="current-video">
+      <strong id="video-title">Waiting for download...</strong>
+      <!-- Optional Thumbnail -->
+      <img id="video-thumb" src="" alt="" style="max-width:100%; display:none; margin-top:0.5rem; border-radius:0.4rem;">
     </div>
-    <div class="card-body" style="overflow-y:auto; height:50%;">
-        <ul id="queue" class="queue-list mb-0">
-        </ul>
-    </div>
+  </div>
 </div>
-
+        <div class="card" style="flex: 1;">
+            <div class="card-header"><h3>Download Task List</h3></div>
+            <div class="card-body" style="overflow-y:auto;">
+                <ul id="tasks" class="list-group mb-0"></ul>
+                <span id="moving-bullet"></span>
+            </div>
         </div>
 
+        <div class="loading-container">
+            <div class="loading-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="progress-text" id="progress-text">0%</div>
+        </div>
+
+        <!-- Download Queue -->
+        <div class="card queue-card" style="flex: 2;">
+            <div class="card-header queue-header">
+                <h3>Download Queue</h3>
+            </div>
+            <div class="card-body" style="overflow-y:auto;">
+                <ul id="queue" class="queue-list mb-0"></ul>
+            </div>
+        </div>
+    </div>
+
         <!-- Mittlere Spalte: Download Form -->
+        <div class="equal-col">
+
         <div style="flex:1;">
             <form action="{{ url_for('video_settings', download_folder=download_folder) }}" method="POST"
                   class="mb-4 form-card">
@@ -120,12 +138,7 @@
                 <input type="submit" class="btn btn-info w-100 btn-download" value="Start Download">
             </form>
 
-            <div class="loading-container">
-                <div class="loading-bar">
-                    <div class="progress-fill" id="progress-fill"></div>
-                </div>
-                <div class="progress-text" id="progress-text">0%</div>
-            </div>
+        </div>
 
             <a id="cancel-download" href="{{ url_for('abort') }}" class="btn btn-gradient mb-4" style="display: none;">
                 Cancel Download
@@ -133,21 +146,16 @@
         </div>
 
         <!-- Rechte Spalte: Konsole -->
-        <div class="d-flex flex-column" style="flex:1;">
-            <div class="card flex-fill">
-                <div class="card-header"><h3>Console</h3></div>
-                <div class="card-body console-box console-box" style="overflow-y:auto;">
-                    {% for command in console_socket %}
-                    <div class="text">
-                    <span>
-                        <strong class="console-text">[console]:</strong> {{ command }}
-                    </span>
-                    </div>
-                    {% endfor %}
-                    <div class="console" id="console"></div>
-                </div>
+        <div class="d-flex flex-column equal-col">
+        <div class="card flex-fill">
+            <div class="card-header"><h3>Console</h3></div>
+            <div class="card-body console-box" style="overflow-y:auto;">
+                <div class="console" id="console"></div>
             </div>
         </div>
+    </div>
+</div>
+
 
     </div>
     <script>
@@ -309,6 +317,13 @@
                 lastWorkingIndex = -1;
             }
         });
+
+        // current video
+        socket.on("current_video", function(data) {
+    const titleEl = document.getElementById("video-title");
+
+    titleEl.textContent = data.title;
+});
     </script>
 </body>
 </html>

@@ -3,10 +3,9 @@ import subprocess
 import sys
 from program_files.outsourced_functions import read, save
 import yt_dlp
-from program_files.sockets import console, progress, update_title_in_queue
+from program_files.sockets import update_title_in_queue, update_current_video
 import threading
 import program_files.globals as global_variables
-
 download_process = None
 
 def update_yt_dlp():
@@ -32,10 +31,20 @@ def update_yt_dlp():
     return
 
 def get_name(video_url):
+    print("Get name")
     with yt_dlp.YoutubeDL({}) as ydl:
         video_metadata = ydl.extract_info(video_url, download=False)
-        print("Titel:", video_metadata['title'])
-        update_title_in_queue(video_metadata['title'], video_url)
+        if video_url == global_variables.current_video_url:
+            update_current_video(video_metadata['title'])
+            global_variables.current_name = video_metadata['title']
+        else:
+            update_title_in_queue(video_metadata['title'], video_url)
+            for entry in global_variables.video_data:
+                if entry["video_url"] == video_url:
+                    entry["video_name"] = video_metadata['title']
+                    print(f"Video name: {video_metadata['title']}") # TODO: mit logging loggen, was wirklich ankommt, wahrscheinlich irgendein Fehler in forschleife
+                    break
+
 
 def start_get_name(video_url):
     t = threading.Thread(target=get_name, args=(video_url,))

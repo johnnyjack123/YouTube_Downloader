@@ -80,10 +80,8 @@ def home(): # TODO: Überprüfen, ob datei durch irgendwas gestperrt ist -> Seit
     checkbox = read("custom_resolution_checkbox")
     video_checkbox = read("video_checkbox")
     audio_checkbox = read("audio_checkbox")
-    print("End home")
-    log_event("End home")
-    log_event("Before render_template")
-    html = render_template("index.html", download_folder=download_folder,
+    return render_template('index.html',
+                           download_folder=download_folder,
                            video_quality=video_quality,
                            video_resolution=video_resolution,
                            video_container=video_container,
@@ -91,22 +89,9 @@ def home(): # TODO: Überprüfen, ob datei durch irgendwas gestperrt ist -> Seit
                            console_socket=global_variables.console_socket,
                            video_checkbox=video_checkbox,
                            audio_checkbox=audio_checkbox)
-    log_event("After render_template")
-    return html
-"""return render_template('index.html',
-                       download_folder=download_folder,
-                       video_quality=video_quality,
-                       video_resolution=video_resolution,
-                       video_container=video_container,
-                       checkbox=checkbox,
-                       console_socket=global_variables.console_socket,
-                       video_checkbox=video_checkbox,
-                       audio_checkbox=audio_checkbox)"""
 
 @app.route('/video_settings', methods=["GET", "POST"])
 def video_settings():
-    print("Start settings")
-    log_event("Start settings")
     custom_resolution = request.form.get("custom_resolution")
     video_checkbox = request.form.get("video_checkbox")
     audio_checkbox = request.form.get("audio_checkbox")
@@ -266,7 +251,6 @@ if __name__ == '__main__':
         if data["open_browser"] == "yes":
             open_browser()
         update_yt_dlp()
-        #socketio.start_background_task(manage_download)
         start_download()
         print("Started background task")
         socketio.run(app, host="0.0.0.0", port=5000, debug=True)

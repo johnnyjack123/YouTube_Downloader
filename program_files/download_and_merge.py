@@ -24,22 +24,62 @@ def read(entry):
             return video_data
 
 def get_frame_count_estimate(video_file):
-    cmd = [
+    # --- 1. Versuch: direkt nb_frames auslesen ---
+    cmd_nb = [
+        'ffprobe', '-v', 'error',
+        '-select_streams', 'v:0',
+        '-show_entries', 'stream=nb_frames',
+        '-of', 'default=noprint_wrappers=1:nokey=1',
+        video_file
+    ]
+    result_nb = subprocess.run(cmd_nb, capture_output=True, text=True)
+    nb_frames_str = result_nb.stdout.strip()
+
+    if nb_frames_str and nb_frames_str != "N/A":
+        try:
+            return int(nb_frames_str)
+        except ValueError:
+            pass  # Fallback auf Berechnung
+
+    # --- 2. Fallback: fps × duration ---
+    cmd_fallback = [
         'ffprobe', '-v', 'error',
         '-select_streams', 'v:0',
         '-show_entries', 'stream=avg_frame_rate,duration',
         '-of', 'default=noprint_wrappers=1:nokey=1',
         video_file
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-    fps_str, duration_str = result.stdout.strip().split("\n")
+    result_fb = subprocess.run(cmd_fallback, capture_output=True, text=True)
+    lines = result_fb.stdout.strip().splitlines()
 
-    # FPS ist oft ein Bruch wie "30000/1001"
-    num, den = map(int, fps_str.split('/'))
-    fps = num / den
-    duration = float(duration_str)
+    if len(lines) >= 2:
+        fps_str, duration_str = lines[0].strip(), lines[1].strip()
 
-    return int(duration * fps)
+        fps = 0.0
+        if fps_str and fps_str != "N/A":
+            try:
+                if "/" in fps_str:
+                    num, den = map(int, fps_str.split('/'))
+                    if den != 0:
+                        fps = num / den
+                else:
+                    fps = float(fps_str)
+            except Exception:
+                fps = 0.0
+
+        duration = 0.0
+        if duration_str and duration_str != "N/A":
+            try:
+                duration = float(duration_str)
+            except Exception:
+                duration = 0.0
+
+        if fps > 0 and duration > 0:
+            return int(duration * fps)
+
+    # --- Wenn gar nichts geht ---
+    return 0
+
 
 def send_status(function_name, function_args):
     cmd = json.dumps({"function": function_name, "args": function_args})
@@ -130,8 +170,16 @@ def merging_video_audio(video_file, audio_file, output_file):
         if audio_codec.lower() != "aac":
             send_status("console", [f"Audio codec {audio_codec} not supported in MOV, re-encoding to AAC", source])
             audio_option = "aac"
+    send_status("console", [f"Before total frames", source])
 
     total_frames = get_frame_count_estimate(video_file)
+    print(f"DEBUG: total_frames={total_frames!r}")
+    send_status("console", [f"Total frames: {total_frames}.", source])
+
+    try:
+        total_frames = int(total_frames)
+    except (ValueError, TypeError):
+        total_frames = 0  # oder ein Fallback, wenn du es gar nicht bestimmen kannst
 
     cmd = [
         "ffmpeg", "-y",
@@ -152,9 +200,9 @@ def merging_video_audio(video_file, audio_file, output_file):
         line = line.strip()
         if line.startswith("frame="):
             try:
-                frame_str = int(line.split("=")[1])
-                if frame_str != "N/A":
-                    current_frame = int(frame_str)
+                frame_value = line.split("=")[1].strip()
+                if frame_value != "N/A":
+                    current_frame = int(frame_value)
                     if total_frames > 0:
                         percent = round((current_frame / total_frames) * 100, 1)
                         send_status("progress", ["downloading", f"{percent}%", 0, 0])
