@@ -35,8 +35,8 @@ def get_name(video_url):
     with yt_dlp.YoutubeDL({}) as ydl:
         video_metadata = ydl.extract_info(video_url, download=False)
         if video_url == global_variables.current_video_url:
-            update_current_video(video_metadata['title'])
             global_variables.current_name = video_metadata['title']
+            update_current_video()
         else:
             update_title_in_queue(video_metadata['title'], video_url)
             for entry in global_variables.video_data:

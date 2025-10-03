@@ -14,7 +14,7 @@ def init_socket(socketio_instance):
         console("Client connected", "python")
         emit_queue()
         update_tasks()
-        update_current_video(global_variables.current_name)
+        update_current_video()
 
 def update_tasks():
     socketio.emit("update_tasks", global_variables.task_list)
@@ -27,7 +27,9 @@ def update_title_in_queue(title, video_url):
                 video["video_name"] = title
                 emit_queue()
 
-def update_current_video(title):
+def update_current_video():
+    title = global_variables.current_name
+    print(f"Current Video Name: {title}")
     socketio.emit("current_video", title)
     socketio.sleep(0)
 

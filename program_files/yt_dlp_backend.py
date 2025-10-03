@@ -19,11 +19,13 @@ from datetime import datetime
 import threading
 
 logging.basicConfig(
-    filename="program_files/debug.log",
+    filename="program_files/debug2.log",
     level=logging.DEBUG,
     format="%(asctime)s.%(msecs)03d [%(levelname)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
 )
+
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Directory of this file
 userdata_file = os.path.join(BASE_DIR, "..", "userdata.json")
@@ -53,9 +55,8 @@ def log_event(msg: str):
     logging.debug(msg)        # geht in die Datei
 
 @app.route('/', methods=["GET", "POST"])
-def home(): # TODO: Überprüfen, ob datei durch irgendwas gestperrt ist -> Seite lädt ewig nicht
+def home():
     print("Start home")
-    log_event("Start home")
     video_quality = ["bestvideo", "best", "worstvideo"]
     video_resolution = ["720", "1080", "1920", "1440", "2160"]
     video_container = ["mp4", "mov", "mkv", "webm", "avi"]
@@ -64,7 +65,7 @@ def home(): # TODO: Überprüfen, ob datei durch irgendwas gestperrt ist -> Seit
     download_folder = data["download_folder"]
 
     default_video_quality = data["video_quality"]
-
+    print(f"Default video quality: {default_video_quality}")
     video_quality.remove(default_video_quality)
     video_quality.insert(0, default_video_quality)
     video_quality = convert_command_to_text(video_quality)
@@ -80,6 +81,7 @@ def home(): # TODO: Überprüfen, ob datei durch irgendwas gestperrt ist -> Seit
     checkbox = read("custom_resolution_checkbox")
     video_checkbox = read("video_checkbox")
     audio_checkbox = read("audio_checkbox")
+    print(f"Video Quality List: {video_quality}")
     return render_template('index.html',
                            download_folder=download_folder,
                            video_quality=video_quality,
@@ -92,6 +94,7 @@ def home(): # TODO: Überprüfen, ob datei durch irgendwas gestperrt ist -> Seit
 
 @app.route('/video_settings', methods=["GET", "POST"])
 def video_settings():
+    #log_event(global_variables.console_socket)
     custom_resolution = request.form.get("custom_resolution")
     video_checkbox = request.form.get("video_checkbox")
     audio_checkbox = request.form.get("audio_checkbox")
@@ -100,47 +103,37 @@ def video_settings():
         video_resolution = request.form.get("video_resolution")
         if not video_resolution:
             return "No resolution set"
-        #video_resolution_command = 'bv[height<=' + video_resolution + ']+ba' #TODO: Dynamisch mit worst audio, audio wird aber separat in zweitem download herunter geladen
         file["video_resolution"] = video_resolution
-        #save("video_resolution", video_resolution)
-        #save("video_resolution_command", video_resolution_command)
         file["custom_resolution_checkbox"] = True
-        #save("custom_resolution_checkbox", True)
-        #video_resolution = video_resolution_command
         video_quality = False
         audio_quality = False
     else:
         video_quality = request.form.get("video_quality")
-
+        print(f"Video quality form: {video_quality}")
         video_quality, audio_quality = convert_text_to_command(video_quality, video_checkbox, audio_checkbox)
-        print("Audio Quality: " + audio_quality)
+        print(f"Video quality: {video_quality}")
+        print(f"Audio Quality: {audio_quality}")
         file["custom_resolution_checkbox"] = False
-        save("custom_resolution_checkbox", False)
+        #save("custom_resolution_checkbox", False)
 
-        #video_resolution = video_quality + "+" + audio_quality
         video_resolution = False
         if video_quality:
-            file["video_quality"] = video_resolution
-            #save("video_quality", video_quality)
+            file["video_quality"] = video_quality
 
     if video_checkbox == "yes":
         file["video_checkbox"] = True
-        #save("video_checkbox", True)
     else:
         file["video_checkbox"] = False
-        #save("video_checkbox", False)
 
     if audio_checkbox == "yes":
         file["audio_checkbox"] = True
-        #save("audio_checkbox", True)
     else:
         file["audio_checkbox"] = False
-        #save("audio_checkbox", False)
 
     video_container = request.form.get("video_container")
     if not video_container == "mp3":
         file["video_container"] = video_container
-        save("video_container", video_container)
+        #save("video_container", video_container)
     video_url = request.form.get("video_url")
 
     save("whole_file", file)
@@ -160,20 +153,10 @@ def video_settings():
             "video_checkbox": video_checkbox,
             "audio_checkbox": audio_checkbox,
         }
-
         global_variables.video_data.append(entry)
         start_get_name(video_url)
         emit_queue()
-        #logging.debug(global_variables.video_data)
-        #logging.debug(f"Saving video_quality = {video_quality!r} (type={type(video_quality)})")
-
-        #if not global_variables.is_downloading:
-            #print("start")
-            #start_download()
-            #socketio.start_background_task(lambda: time.sleep(0.1) or manage_download())
-            #console("Started Process.")
         print("End settings")
-        log_event("End settings")
     return redirect(url_for("home"))
 
 @app.route('/abort', methods=["GET", "POST"])
@@ -243,9 +226,7 @@ def settings():
 
 if __name__ == '__main__':
     result = ensure_ffmpeg()
-    print("test")
     if result == "run":
-        print("test2")
         check_for_userdata()
         data = read("file")
         if data["open_browser"] == "yes":
@@ -265,7 +246,9 @@ if __name__ == '__main__':
 # TODO: Pixabay Bild erwähnen in LIENSE.md
 # TODO: Console in Browser scrollbar machen
 # TODO: Standard hintergrund dunkel machen
-# TODO: In Console mehr Konsistenz mit [video]...
-# TODO: Überprüfen, ob Thread wirklich beendet wurde
-# TODO: Ladebalken in den Bereich von TODO Liste, wo noch Platz ist
 # TODO: Downloading REssources bei video download anzeigen lassen, bug
+# TODO: Console nicht scrollbar
+# TODO: machen dass nach reload (wenn zum Beispiel video in Queue ist) ganze Consolen History geladen wird
+# TODO: Download Queue auf Seite von Console, damit Ladebalken nicht gekürzt wird, stattdessen cancel Download Button unter den PRogress Balken
+# TODO: Rechtschreibfehler in Logo fixen
+# TODO: Automatische Installation und start über Batch-Datei, die auch venv aktiviert

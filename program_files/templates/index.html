@@ -40,7 +40,7 @@
   </div>
   <div class="card-body">
     <div id="current-video">
-      <strong id="video-title">Waiting for download...</strong>
+      <strong id="video-title"></strong>
       <!-- Optional Thumbnail -->
       <img id="video-thumb" src="" alt="" style="max-width:100%; display:none; margin-top:0.5rem; border-radius:0.4rem;">
     </div>
@@ -322,7 +322,7 @@
         socket.on("current_video", function(data) {
     const titleEl = document.getElementById("video-title");
 
-    titleEl.textContent = data.title;
+    titleEl.textContent = data;
 });
     </script>
 </body>
