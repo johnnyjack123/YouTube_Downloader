@@ -68,6 +68,20 @@
             </label>
         </div>
 
+        <!-- Continue download previous queue -->
+        <div class="form-check mb-3">
+            {% if download_previous_queue %}
+            <input type="checkbox" name="download_previous_queue" value="yes"
+                   class="form-check-input" id="downloadQueue" checked>
+            {% else %}
+            <input type="checkbox" name="download_previous_queue" value="yes"
+                   class="form-check-input" id="downloadQueue">
+            {% endif %}
+            <label for="downloadQueue" class="form-check-label">
+                Download previous queue after restarting the program.
+            </label>
+        </div>
+
         <hr class="my-4">
 
         <input type="submit" class="btn btn-info w-100 btn-download" value="Save settings">

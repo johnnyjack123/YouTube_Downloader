@@ -133,6 +133,7 @@ def check_for_userdata():
         "open_browser": "yes",
         "auto_update": "yes",
         "auto_merge": "yes",
+        "download_previous_queue": "yes",
         "video_queue": []
     }
     if not os.path.exists(userdata_file):
@@ -300,7 +301,13 @@ def abort_download():
     download_process.terminate()
 
 def check_for_queue():
-    video_queue = read("video_queue")
-    if video_queue:
-        global_variables.video_queue = video_queue
-        console("Continuing download previous queue.", "python")
+    data = read("file")
+    download_previous_queue = data["download_previous_queue"]
+    if download_previous_queue == "yes":
+        video_queue = data["video_queue"]
+        if video_queue:
+            global_variables.video_queue = video_queue
+            console("Continuing download previous queue.", "python")
+    else:
+        data["video_queue"] = []
+        save("whole_file", data)

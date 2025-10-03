@@ -205,18 +205,32 @@ def settings_page():
     open_browser_window = data["open_browser"]
     auto_update = data["auto_update"]
     auto_merge = data["auto_merge"]
-    return render_template('settings.html', open_browser_window=open_browser_window, auto_update=auto_update, auto_merge=auto_merge)
+    download_previous_queue = data["download_previous_queue"]
+    return render_template('settings.html',
+                           open_browser_window=open_browser_window,
+                           auto_update=auto_update,
+                           auto_merge=auto_merge,
+                           download_previous_queue=download_previous_queue)
 
 @app.route('/settings', methods=["POST"])
 def settings():
+    data = read("file")
     open_browser_window = request.form.get("open_browser_window")
-    save("open_browser", open_browser_window)
+    data["open_browser"] = open_browser_window
+    #save("open_browser", open_browser_window)
 
     auto_update = request.form.get("auto_update")
-    save("auto_update", auto_update)
+    data["auto_update"] = auto_update
+    #save("auto_update", auto_update)
 
     auto_merge = request.form.get("auto_merge")
-    save("auto_merge", auto_merge)
+    data["auto_merge"] = auto_merge
+    #save("auto_merge", auto_merge)
+
+    download_previous_queue = request.form.get("download_previous_queue")
+    data["download_previous_queue"] = download_previous_queue
+    #save("download_previous_queue", download_previous_queue)
+    save("whole_file", data)
     return redirect(url_for("settings_page"))
 
 if __name__ == '__main__':
@@ -247,4 +261,3 @@ if __name__ == '__main__':
 # TODO: Download Queue auf Seite von Console, damit Ladebalken nicht gekürzt wird, stattdessen cancel Download Button unter den PRogress Balken
 # TODO: Rechtschreibfehler in Logo fixen
 # TODO: Automatische Installation und start über Batch-Datei, die auch venv aktiviert
-# TODO: Video Queue in History speichern
