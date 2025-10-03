@@ -190,20 +190,32 @@
 
         // Console
         const consoleBox = document.getElementById("console");
-        const createMessage = (msg) => {
-            const content = `
+
+const createMessage = (msg) => {
+    if (Array.isArray(msg)) {
+        msg.forEach(entry => {
+            addLine(entry);
+        });
+    } else {
+        addLine(msg);
+    }
+};
+
+function addLine(text) {
+    const content = `
         <div class="text">
             <span>
-                <strong class="console-text">[console]</strong>: ${msg}
+                <strong class="console-text">[console]</strong>: ${text}
             </span>
         </div>
-        `;
-            consoleBox.innerHTML += content;
-        };
+    `;
+    consoleBox.innerHTML += content;
+}
 
-        socket.on("console", (msg) => {
-            createMessage(msg);
-        });
+socket.on("console", (msg) => {
+    createMessage(msg);
+});
+
 
         // Queue
         socket.on("queue", function(queue) {

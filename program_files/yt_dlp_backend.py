@@ -1,22 +1,14 @@
-#import eventlet
-import json
-from program_files.globals import video_data
-#eventlet.monkey_patch()
 from flask import Flask, request, render_template, redirect, url_for
 from flask_socketio import SocketIO
 import os
 import json
 import logging
-import subprocess
-import sys
 from program_files.outsourced_functions import (save, read,
                                                 check_for_userdata, ensure_ffmpeg, open_browser, convert_command_to_text,
                                                 convert_text_to_command, search_download_folder, start_download, abort_download, manage_download)
 import program_files.globals as global_variables
 from program_files.yt_dlp_functions import update_yt_dlp, start_get_name
-import time
 from datetime import datetime
-import threading
 
 logging.basicConfig(
     filename="program_files/debug2.log",
@@ -46,7 +38,7 @@ app = Flask(
 
 socketio = SocketIO(app, async_mode="threading", cors_allowed_origins="*")
 import program_files.sockets as sockets
-from program_files.sockets import init_socket, update_tasks, update_title_in_queue, console, emit_queue, progress
+from program_files.sockets import console, emit_queue
 sockets.init_socket(socketio)
 
 def log_event(msg: str):
@@ -248,7 +240,7 @@ if __name__ == '__main__':
 # TODO: Standard hintergrund dunkel machen
 # TODO: Downloading REssources bei video download anzeigen lassen, bug
 # TODO: Console nicht scrollbar
-# TODO: machen dass nach reload (wenn zum Beispiel video in Queue ist) ganze Consolen History geladen wird
 # TODO: Download Queue auf Seite von Console, damit Ladebalken nicht gekürzt wird, stattdessen cancel Download Button unter den PRogress Balken
 # TODO: Rechtschreibfehler in Logo fixen
 # TODO: Automatische Installation und start über Batch-Datei, die auch venv aktiviert
+# TODO: Video Queue in History speichern

@@ -6,12 +6,11 @@ def init_socket(socketio_instance):
     global socketio
     socketio = socketio_instance
 
-    # Hier registrierst du die Events
     @socketio.on("connect")
     def handle_connect():
-        #global task_list
         print("Client connected")
         console("Client connected", "python")
+        console(global_variables.console_socket, "reload")
         emit_queue()
         update_tasks()
         update_current_video()
@@ -29,7 +28,6 @@ def update_title_in_queue(title, video_url):
 
 def update_current_video():
     title = global_variables.current_name
-    print(f"Current Video Name: {title}")
     socketio.emit("current_video", title)
     socketio.sleep(0)
 
@@ -41,11 +39,16 @@ def console(command, source):
     elif command == "[yt-dlp]: Testing formats":
         if "[yt-dlp]: Testing formats" in global_variables.console_socket:
             return
-    print(f"[console] [{source}] {command}")
-    socketio.emit("console", f"[{source}] {command}")
-    socketio.sleep(0)
-    global_variables.console_socket.append(f"[{source}] {command}")
-    return
+
+    if source != "reload":
+        print(f"[console] [{source}] {command}")
+        socketio.emit("console", f"[{source}] {command}")
+        socketio.sleep(0)
+        global_variables.console_socket.append(f"[{source}] {command}")
+        return
+    else:
+        socketio.emit("console", global_variables.console_socket)
+        socketio.sleep(0)
 
 def emit_queue():
     # Take names of videos

@@ -31,7 +31,6 @@ def update_yt_dlp():
     return
 
 def get_name(video_url):
-    print("Get name")
     with yt_dlp.YoutubeDL({}) as ydl:
         video_metadata = ydl.extract_info(video_url, download=False)
         if video_url == global_variables.current_video_url:
@@ -42,7 +41,6 @@ def get_name(video_url):
             for entry in global_variables.video_data:
                 if entry["video_url"] == video_url:
                     entry["video_name"] = video_metadata['title']
-                    print(f"Video name: {video_metadata['title']}") # TODO: mit logging loggen, was wirklich ankommt, wahrscheinlich irgendein Fehler in forschleife
                     break
 
 
