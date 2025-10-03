@@ -1,4 +1,4 @@
-video_data = []
+video_queue = []
 task_list = []
 console_socket = []
 is_downloading = False
@@ -7,6 +7,7 @@ download_type = ""
 abort_flag = False
 current_video_url = ""
 current_name = "No active download."
+abort = False
 
 quality_map = {
     "bestvideo": "Best",

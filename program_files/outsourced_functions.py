@@ -132,7 +132,8 @@ def check_for_userdata():
         "yt-dlp_update_time": "2025-09-06T17:40:36.348409",
         "open_browser": "yes",
         "auto_update": "yes",
-        "auto_merge": "yes"
+        "auto_merge": "yes",
+        "video_queue": []
     }
     if not os.path.exists(userdata_file):
         with open(userdata_file, "w", encoding="utf-8") as f:
@@ -242,10 +243,10 @@ def manage_download():
     global download_process
     print("Manage download.")
     while True:
-        if global_variables.video_data:
+        if global_variables.video_queue and not global_variables.abort:
 
             global_variables.is_downloading = True
-            video_entry = global_variables.video_data.pop(0)
+            video_entry = global_variables.video_queue.pop(0)
             emit_queue()
             global_variables.current_video_url = video_entry["video_url"]
             global_variables.current_name = video_entry["video_name"]
@@ -288,6 +289,7 @@ def manage_download():
             download_process.wait()
             print("Prozess beendet mit Code", download_process.returncode)
             global_variables.is_downloading = False
+            save("video_queue", global_variables.video_queue)
         else:
             global_variables.current_name = "No active download."
             update_current_video()
@@ -296,3 +298,9 @@ def manage_download():
 def abort_download():
     global download_process
     download_process.terminate()
+
+def check_for_queue():
+    video_queue = read("video_queue")
+    if video_queue:
+        global_variables.video_queue = video_queue
+        console("Continuing download previous queue.", "python")

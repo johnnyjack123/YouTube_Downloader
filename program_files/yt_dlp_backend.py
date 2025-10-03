@@ -5,7 +5,7 @@ import json
 import logging
 from program_files.outsourced_functions import (save, read,
                                                 check_for_userdata, ensure_ffmpeg, open_browser, convert_command_to_text,
-                                                convert_text_to_command, search_download_folder, start_download, abort_download, manage_download)
+                                                convert_text_to_command, search_download_folder, start_download, abort_download, check_for_queue)
 import program_files.globals as global_variables
 from program_files.yt_dlp_functions import update_yt_dlp, start_get_name
 from datetime import datetime
@@ -87,6 +87,7 @@ def home():
 @app.route('/video_settings', methods=["GET", "POST"])
 def video_settings():
     #log_event(global_variables.console_socket)
+    global_variables.abort = False
     custom_resolution = request.form.get("custom_resolution")
     video_checkbox = request.form.get("video_checkbox")
     audio_checkbox = request.form.get("audio_checkbox")
@@ -129,7 +130,7 @@ def video_settings():
     video_url = request.form.get("video_url")
 
     save("whole_file", file)
-    found = next((v for v in global_variables.video_data if v["video_url"] == video_url), None)
+    found = next((v for v in global_variables.video_queue if v["video_url"] == video_url), None)
 
     if found:
         console("Video already in Queue.", "python")
@@ -145,7 +146,8 @@ def video_settings():
             "video_checkbox": video_checkbox,
             "audio_checkbox": audio_checkbox,
         }
-        global_variables.video_data.append(entry)
+        global_variables.video_queue.append(entry)
+        save("video_queue", global_variables.video_queue)
         start_get_name(video_url)
         emit_queue()
         print("End settings")
@@ -153,8 +155,9 @@ def video_settings():
 
 @app.route('/abort', methods=["GET", "POST"])
 def abort():
-    global_variables.abort_flag = True
-    console("Abort download.", "python")
+    #global_variables.abort_flag = True
+    global_variables.abort = True
+    console("Aborting download.", "python")
     abort_download()
     return redirect(url_for("home"))
 
@@ -224,6 +227,7 @@ if __name__ == '__main__':
         if data["open_browser"] == "yes":
             open_browser()
         update_yt_dlp()
+        check_for_queue()
         start_download()
         print("Started background task")
         socketio.run(app, host="0.0.0.0", port=5000, debug=True)

@@ -38,7 +38,7 @@ def get_name(video_url):
             update_current_video()
         else:
             update_title_in_queue(video_metadata['title'], video_url)
-            for entry in global_variables.video_data:
+            for entry in global_variables.video_queue:
                 if entry["video_url"] == video_url:
                     entry["video_name"] = video_metadata['title']
                     break

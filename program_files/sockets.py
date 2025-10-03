@@ -19,9 +19,9 @@ def update_tasks():
     socketio.emit("update_tasks", global_variables.task_list)
 
 def update_title_in_queue(title, video_url):
-    if global_variables.video_data:
+    if global_variables.video_queue:
         if title:
-            video = next((v for v in global_variables.video_data if v["video_url"] == video_url), None)
+            video = next((v for v in global_variables.video_queue if v["video_url"] == video_url), None)
             if video:
                 video["video_name"] = title
                 emit_queue()
@@ -52,7 +52,7 @@ def console(command, source):
 
 def emit_queue():
     # Take names of videos
-    queue_names = [video["video_name"] for video in global_variables.video_data]
+    queue_names = [video["video_name"] for video in global_variables.video_queue]
     socketio.emit("queue", queue_names)
     socketio.sleep(0)
 
