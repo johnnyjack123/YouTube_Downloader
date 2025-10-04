@@ -1,3 +1,7 @@
+# Third-Party licenses
+## Icon license
+Source: https://lucide.dev
+
 ISC License
 
 Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT). All other copyright (c) for Lucide are held by Lucide Contributors 2022.
@@ -13,3 +17,9 @@ ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
 WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+
+## Background image
+Huge thanks to Namcryber for an awesome background image:
+
+Source: https://pixabay.com/de/photos/blatt-abstract-gelb-baum-wald-3813777/

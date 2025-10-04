@@ -86,7 +86,7 @@ def check_for_updates():
     if response_version.status_code == 200:
         with open(new_version, "wb") as file:
             file.write(response_version.content)
-            print("File stored in /tmp")
+            print("File stored in ./tmp")
         try:
             with open(old_version, "r", encoding="utf-8") as file:
                 program_version = float(file.read().strip())
@@ -109,11 +109,10 @@ data = read("file")
 
 if data["auto_update"] == "yes":
     if check_internet_connection():
-        print("Internet connection")
         check_for_updates()
     else:
         print("No internet connection")
         launch_app()
 else:
-    print("Auto updates disabled")
+    print("Auto updates disabled. Go to settings to change.")
     launch_app()

@@ -43,12 +43,10 @@ sockets.init_socket(socketio)
 
 def log_event(msg: str):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-    print(f"{now} | {msg}")   # geht in die Konsole
-    logging.debug(msg)        # geht in die Datei
+    logging.debug(msg)
 
 @app.route('/', methods=["GET", "POST"])
 def home():
-    print("Start home")
     video_quality = ["bestvideo", "best", "worstvideo"]
     video_resolution = ["720", "1080", "1920", "1440", "2160"]
     video_container = ["mp4", "mov", "mkv", "webm", "avi"]
@@ -57,7 +55,6 @@ def home():
     download_folder = data["download_folder"]
 
     default_video_quality = data["video_quality"]
-    print(f"Default video quality: {default_video_quality}")
     video_quality.remove(default_video_quality)
     video_quality.insert(0, default_video_quality)
     video_quality = convert_command_to_text(video_quality)
@@ -103,12 +100,8 @@ def video_settings():
         audio_quality = False
     else:
         video_quality = request.form.get("video_quality")
-        print(f"Video quality form: {video_quality}")
         video_quality, audio_quality = convert_text_to_command(video_quality, video_checkbox, audio_checkbox)
-        print(f"Video quality: {video_quality}")
-        print(f"Audio Quality: {audio_quality}")
         file["custom_resolution_checkbox"] = False
-        #save("custom_resolution_checkbox", False)
 
         video_resolution = False
         if video_quality:
@@ -127,7 +120,6 @@ def video_settings():
     video_container = request.form.get("video_container")
     if not video_container == "mp3":
         file["video_container"] = video_container
-        #save("video_container", video_container)
     video_url = request.form.get("video_url")
 
     save("whole_file", file)
@@ -151,7 +143,6 @@ def video_settings():
         save("video_queue", global_variables.video_queue)
         start_get_name(video_url)
         emit_queue()
-        print("End settings")
     return redirect(url_for("home"))
 
 @app.route('/abort', methods=["GET", "POST"])
@@ -258,7 +249,6 @@ if __name__ == '__main__':
         update_yt_dlp()
         check_for_queue()
         start_download()
-        print("Started background task")
         socketio.run(app, host="0.0.0.0", port=5000, debug=True)
 
     elif result == "restart":
@@ -266,9 +256,4 @@ if __name__ == '__main__':
     else:
         print("Error. Either ffmpeg is not installed or not entered in the system environment variables.")
 
-# TODO: Sinnlose prints löschen
-# TODO: Pixabay Bild erwähnen in LIENSE.md
-# TODO: Console in Browser scrollbar machen
-# TODO: Standard hintergrund dunkel machen
-# TODO: Rechtschreibfehler in Logo fixen
 # TODO: Automatische Installation und start über Batch-Datei, die auch venv aktiviert

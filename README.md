@@ -8,7 +8,7 @@ YouTube Downloader is a tool based on [yt-dlp](https://github.com/yt-dlp/yt-dlp?
 1. Clone this Git repository.
 2. Make sure [Python](https://www.python.org/downloads/) is installed on your PC.
 3. It as also necessary to have [FFmpeg](https://ffmpeg.org) installed on your PC. In this script is an implemented downloader for FFmpeg, if it is not installed. If the script is asking you, if you want to install FFmpeg, type in "yes" followed from enter in the command line. FFmpeg is used to merge the video and audio stream provided by YouTube. You are not able to use this tool without FFmpeg installed.
-3. Move in the command line to the folder where the `launcher.py` file is located.
+3. Move in the command line to the folder `./program_files` where the `requirements.txt` file is located.
 4. Run the command `pip install -r requirements.txt` to install the necessary libraries.
 5. Run the command `python launcher.py` to launch the program.
 6. If everything works correctly a browser window will open.

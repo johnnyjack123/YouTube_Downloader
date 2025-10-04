@@ -394,11 +394,17 @@
 }
 
 body {
-    background: url("bg/leaf-3813777.avif") no-repeat center center fixed;
+    background-color: #1e1e1e; /* Fallback-Farbe bleibt aktiv */
+    background-image: url("bg/leaf-3813777.avif");
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-attachment: fixed;
     background-size: cover;
+
     margin: 0;
     padding: 0;
 }
+
 
 .loading-container {
     width: 100%;

@@ -30,108 +30,110 @@
     </div>
 
     <!-- Grid für drei Spalten -->
-<div class="d-flex" style="gap:1rem; height: calc(100vh - 120px);">
+    <div class="d-flex" style="gap:1rem; height: calc(100vh - 120px);">
         <!-- Linke Spalte -->
-         <div class="d-flex flex-column equal-col">
-        <!-- Download task list -->
-             <div class="card now-downloading mb-3">
-  <div class="card-header">
-    <h3>Now Downloading</h3>
-  </div>
-  <div class="card-body">
-    <div id="current-video">
-      <strong id="video-title"></strong>
-      <!-- Optional Thumbnail -->
-      <img id="video-thumb" src="" alt="" style="max-width:100%; display:none; margin-top:0.5rem; border-radius:0.4rem;">
-    </div>
-  </div>
-</div>
-        <div class="card" style="flex: 1;">
-            <div class="card-header"><h3>Download Task List</h3></div>
-            <div class="card-body" style="overflow-y:auto;">
-                <ul id="tasks" class="list-group mb-0"></ul>
-                <span id="moving-bullet"></span>
+        <div class="d-flex flex-column equal-col">
+            <!-- Download task list -->
+            <div class="card now-downloading mb-3">
+                <div class="card-header">
+                    <h3>Now Downloading</h3>
+                </div>
+                <div class="card-body">
+                    <div id="current-video">
+                        <strong id="video-title"></strong>
+                    </div>
+                </div>
             </div>
-        </div>
+            <div class="card" style="flex: 1;">
+                <div class="card-header"><h3>Download Task List</h3></div>
+                <div class="card-body" style="overflow-y:auto;">
+                    <ul id="tasks" class="list-group mb-0"></ul>
+                    <span id="moving-bullet"></span>
+                </div>
+            </div>
 
-        <!-- Download Queue -->
-        <div class="card queue-card" style="flex: 2;">
-            <div class="card-header queue-header">
-                <h3>Download Queue</h3>
-            </div>
-            <div class="card-body">
-                <ul id="queue" class="queue-list mb-0"></ul>
+            <!-- Download Queue -->
+            <div class="card queue-card" style="flex: 2;">
+                <div class="card-header queue-header">
+                    <h3>Download Queue</h3>
+                </div>
+                <div class="card-body">
+                    <ul id="queue" class="queue-list mb-0"></ul>
+                </div>
             </div>
         </div>
-    </div>
 
         <!-- Mittlere Spalte: Download Form -->
         <div class="equal-col">
 
-        <div style="flex:1;">
-            <form action="{{ url_for('video_settings', download_folder=download_folder) }}" method="POST"
-                  class="mb-4 form-card">
-                <label class="form-label"><strong>YouTube Link</strong></label>
-                <input type="text" name="video_url" class="form-control mb-3" placeholder="Insert YouTube Link"
-                       autocomplete="off">
+            <div style="flex:1;">
+                <form action="{{ url_for('video_settings', download_folder=download_folder) }}" method="POST"
+                      class="mb-4 form-card">
+                    <label class="form-label"><strong>YouTube Link</strong></label>
+                    <input type="text" name="video_url" class="form-control mb-3" placeholder="Insert YouTube Link"
+                           autocomplete="off">
 
-                <hr class="my-4">
+                    <hr class="my-4">
 
-                <label class="form-label"><strong>Video Quality Settings</strong></label>
-                <select name="video_quality" class="form-select mb-3">
-                    {% for quality in video_quality %}
-                    <option value="{{ quality }}">{{ quality }}</option>
-                    {% endfor %}
-                </select>
+                    <label class="form-label"><strong>Video Quality Settings</strong></label>
+                    <select name="video_quality" class="form-select mb-3">
+                        {% for quality in video_quality %}
+                        <option value="{{ quality }}">{{ quality }}</option>
+                        {% endfor %}
+                    </select>
 
-                {% if video_checkbox %}
-                <input type="checkbox" name="video_checkbox" value="yes" class="form-check-input" id="videoCheckbox"
-                       checked>
-                {% else %}
-                <input type="checkbox" name="video_checkbox" value="yes" class="form-check-input" id="videoCheckbox">
-                {% endif %}
-                <label for="videoCheckbox" class="form-check-label">Download Video</label>
-
-                {% if audio_checkbox %}
-                <input type="checkbox" name="audio_checkbox" value="yes" class="form-check-input" id="audioCheckbox"
-                       checked>
-                {% else %}
-                <input type="checkbox" name="audio_checkbox" value="yes" class="form-check-input" id="audioCheckbox">
-                {% endif %}
-                <label for="audioCheckbox" class="form-check-label">Download Audio</label>
-
-                <hr class="my-4">
-
-                <label class="form-label"><strong>Custom Video Resolution</strong></label>
-                <select name="video_resolution" class="form-select mb-2">
-                    {% for resolution in video_resolution %}
-                    <option value="{{ resolution }}">{{ resolution }}</option>
-                    {% endfor %}
-                </select>
-                <div class="form-check mb-3">
-                    {% if checkbox %}
-                    <input type="checkbox" name="custom_resolution" value="yes" class="form-check-input" id="customRes"
+                    {% if video_checkbox %}
+                    <input type="checkbox" name="video_checkbox" value="yes" class="form-check-input" id="videoCheckbox"
                            checked>
                     {% else %}
-                    <input type="checkbox" name="custom_resolution" value="yes" class="form-check-input" id="customRes">
+                    <input type="checkbox" name="video_checkbox" value="yes" class="form-check-input"
+                           id="videoCheckbox">
                     {% endif %}
-                    <label for="customRes" class="form-check-label">Use custom resolution</label>
-                </div>
+                    <label for="videoCheckbox" class="form-check-label">Download Video</label>
 
-                <hr class="my-4">
+                    {% if audio_checkbox %}
+                    <input type="checkbox" name="audio_checkbox" value="yes" class="form-check-input" id="audioCheckbox"
+                           checked>
+                    {% else %}
+                    <input type="checkbox" name="audio_checkbox" value="yes" class="form-check-input"
+                           id="audioCheckbox">
+                    {% endif %}
+                    <label for="audioCheckbox" class="form-check-label">Download Audio</label>
 
-                <label class="form-label"><strong>Video Container</strong></label>
-                <select name="video_container" class="form-select mb-4">
-                    {% for container in video_container %}
-                    <option value="{{ container }}">{{ container }}</option>
-                    {% endfor %}
-                </select>
+                    <hr class="my-4">
 
-                <hr class="my-4">
-                <input type="submit" class="btn btn-info w-100 btn-download" value="Start Download">
-            </form>
+                    <label class="form-label"><strong>Custom Video Resolution</strong></label>
+                    <select name="video_resolution" class="form-select mb-2">
+                        {% for resolution in video_resolution %}
+                        <option value="{{ resolution }}">{{ resolution }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-check mb-3">
+                        {% if checkbox %}
+                        <input type="checkbox" name="custom_resolution" value="yes" class="form-check-input"
+                               id="customRes"
+                               checked>
+                        {% else %}
+                        <input type="checkbox" name="custom_resolution" value="yes" class="form-check-input"
+                               id="customRes">
+                        {% endif %}
+                        <label for="customRes" class="form-check-label">Use custom resolution</label>
+                    </div>
 
-        </div>
+                    <hr class="my-4">
+
+                    <label class="form-label"><strong>Video Container</strong></label>
+                    <select name="video_container" class="form-select mb-4">
+                        {% for container in video_container %}
+                        <option value="{{ container }}">{{ container }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <hr class="my-4">
+                    <input type="submit" class="btn btn-info w-100 btn-download" value="Start Download">
+                </form>
+
+            </div>
 
             <a id="cancel-download" href="{{ url_for('abort') }}" class="btn btn-gradient mb-4" style="display: none;">
                 Pause Download
@@ -148,199 +150,199 @@
 
         <!-- Rechte Spalte: Konsole -->
         <div class="d-flex flex-column equal-col">
-        <div class="card flex-fill">
-            <div class="card-header"><h3>Console</h3></div>
-            <div class="card-body console-box" style="overflow-y:auto;">
-                <div class="console" id="console"></div>
+            <div class="card flex-fill">
+                <div class="card-header"><h3>Console</h3></div>
+                <div class="card-body console-box" style="overflow-y:auto;">
+                    <div class="console" id="console"></div>
+                </div>
             </div>
-        </div>
-         <div class="loading-container console-progress">
-            <div class="loading-bar">
-                <div class="progress-fill" id="progress-fill"></div>
+            <div class="loading-container console-progress">
+                <div class="loading-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-text" id="progress-text">0%</div>
             </div>
-            <div class="progress-text" id="progress-text">0%</div>
         </div>
     </div>
 </div>
-    </div>
-    <script>
-        var socket = io();
-        var cancelLink = document.getElementById('cancel-download');
+<script>
+    var socket = io();
+    var cancelLink = document.getElementById('cancel-download');
 
 // Progress
 socket.on('progress', function (data) {
-    if (data.message) {
-        document.getElementById('progress-text').textContent = data.message;
-        return;
-    }
+if (data.message) {
+    document.getElementById('progress-text').textContent = data.message;
+    return;
+}
 
-    let percent = parseFloat(data.percent);
-    const fill = document.getElementById("progress-fill");
-    const text = document.getElementById("progress-text");
+let percent = parseFloat(data.percent);
+const fill = document.getElementById("progress-fill");
+const text = document.getElementById("progress-text");
 
-    fill.style.width = percent + "%";
-    text.textContent = `Progress: ${data.percent} | Speed: ${data.speed} | ETA: ${data.eta}`;
+fill.style.width = percent + "%";
+text.textContent = `Progress: ${data.percent} | Speed: ${data.speed} | ETA: ${data.eta}`;
 });
 
 // Cancel button
 socket.on("cancel", function (state) {
-    if (state === true) {
-        cancelLink.style.display = "inline-block";
-    } else {
-        cancelLink.style.display = "none";
-    }
+if (state === true) {
+    cancelLink.style.display = "inline-block";
+} else {
+    cancelLink.style.display = "none";
+}
 });
 
 
 
-        // Console
-        const consoleBox = document.getElementById("console");
+    // Console
+    const consoleBox = document.getElementById("console");
 
 const createMessage = (msg) => {
-    if (Array.isArray(msg)) {
-        msg.forEach(entry => {
-            addLine(entry);
-        });
-    } else {
-        addLine(msg);
-    }
+if (Array.isArray(msg)) {
+    msg.forEach(entry => {
+        addLine(entry);
+    });
+} else {
+    addLine(msg);
+}
 };
 
 function addLine(text) {
-    const content = `
-        <div class="text">
-            <span>
-                <strong class="console-text">[console]</strong>: ${text}
-            </span>
-        </div>
-    `;
-    consoleBox.innerHTML += content;
+const content = `
+    <div class="text">
+        <span>
+            <strong class="console-text">[console]</strong>: ${text}
+        </span>
+    </div>
+`;
+consoleBox.innerHTML += content;
 }
 
 socket.on("console", (msg) => {
-    createMessage(msg);
+createMessage(msg);
 });
 
 
-        // Queue
-        socket.on("queue", function(queue) {
-    let list = document.getElementById("queue");
-    list.innerHTML = "";
-    queue.forEach(videoName => {
-        let li = document.createElement("li");
+    // Queue
+    socket.on("queue", function(queue) {
+let list = document.getElementById("queue");
+list.innerHTML = "";
+queue.forEach(videoName => {
+    let li = document.createElement("li");
 
-        // SVG Element erzeugen
-        let svg = `
-            <svg class="queue-icon" xmlns="http://www.w3.org/2000/svg"
-                 viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="2"
-                 stroke-linecap="round" stroke-linejoin="round">
-                <path d="M2.5 17a24.12 24.12 0 0 1 0-10
-                         2 2 0 0 1 1.4-1.4
-                         49.56 49.56 0 0 1 16.2 0
-                         A2 2 0 0 1 21.5 7
-                         a24.12 24.12 0 0 1 0 10
-                         2 2 0 0 1-1.4 1.4
-                         49.55 49.55 0 0 1-16.2 0
-                         A2 2 0 0 1 2.5 17"/>
-                <path d="m10 15 5-3-5-3z"/>
-            </svg>
-        `;
+    // SVG Element erzeugen
+    let svg = `
+        <svg class="queue-icon" xmlns="http://www.w3.org/2000/svg"
+             viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2.5 17a24.12 24.12 0 0 1 0-10
+                     2 2 0 0 1 1.4-1.4
+                     49.56 49.56 0 0 1 16.2 0
+                     A2 2 0 0 1 21.5 7
+                     a24.12 24.12 0 0 1 0 10
+                     2 2 0 0 1-1.4 1.4
+                     49.55 49.55 0 0 1-16.2 0
+                     A2 2 0 0 1 2.5 17"/>
+            <path d="m10 15 5-3-5-3z"/>
+        </svg>
+    `;
 
-        li.innerHTML = svg + videoName;
-        list.appendChild(li);
-    });
+    li.innerHTML = svg + videoName;
+    list.appendChild(li);
+});
 });
 
 
-        //mp3
-        document.addEventListener("DOMContentLoaded", () => {
-            const audioCheckbox = document.getElementById("audioCheckbox");
-            const videoCheckbox = document.getElementById("videoCheckbox");
-            const containerSelect = document.querySelector("select[name='video_container']");
+    //mp3
+    document.addEventListener("DOMContentLoaded", () => {
+        const audioCheckbox = document.getElementById("audioCheckbox");
+        const videoCheckbox = document.getElementById("videoCheckbox");
+        const containerSelect = document.querySelector("select[name='video_container']");
 
-            const mp3Option = document.createElement("option");
-            mp3Option.value = "mp3";
-            mp3Option.textContent = "mp3";
+        const mp3Option = document.createElement("option");
+        mp3Option.value = "mp3";
+        mp3Option.textContent = "mp3";
 
-            function updateContainers() {
-                if (audioCheckbox.checked && !videoCheckbox.checked) {
-                    // mp3 hinzufügen, falls nicht schon drin
-                    if (![...containerSelect.options].some(opt => opt.value === "mp3")) {
-                        containerSelect.appendChild(mp3Option);
-                    }
-                } else {
-                    // mp3 entfernen
-                    [...containerSelect.options].forEach(opt => {
-                        if (opt.value === "mp3") opt.remove();
-                    });
+        function updateContainers() {
+            if (audioCheckbox.checked && !videoCheckbox.checked) {
+                // mp3 hinzufügen, falls nicht schon drin
+                if (![...containerSelect.options].some(opt => opt.value === "mp3")) {
+                    containerSelect.appendChild(mp3Option);
                 }
-            }
-
-            // Initial check
-            updateContainers();
-
-            // Event Listener
-            audioCheckbox.addEventListener("change", updateContainers);
-            videoCheckbox.addEventListener("change", updateContainers);
-        });
-
-        // Task list
-        //var socket = io();
-
-        var movingBullet = document.getElementById("moving-bullet");
-        var lastWorkingIndex = -1;
-
-        socket.on("update_tasks", function(tasks) {
-            let list = document.getElementById("tasks");
-            list.innerHTML = "";
-
-            let workingIndex = -1;
-
-            tasks.forEach((task, index) => {
-                let li = document.createElement("li");
-                li.className = "list-group-item";
-                li.textContent = task.name;
-                li.style.color = task.status === "done" ? "green" : "white";
-                if (task.status === "done") li.style.textDecoration = "line-through";
-
-                list.appendChild(li);
-
-                if (task.status === "working") workingIndex = index;
-            });
-
-            if (workingIndex !== -1) {
-                let li = list.children[workingIndex];
-                let bulletOffsetX = 8;
-                let bulletOffsetY = (li.offsetHeight - 12) / 2;
-
-                // Bullet sichtbar machen
-                movingBullet.style.opacity = 1;
-                movingBullet.style.left = bulletOffsetX + "px";
-                movingBullet.style.top = (li.offsetTop + bulletOffsetY) + "px";
-
-                // Bounce nur starten, wenn Task wechselt
-                if (workingIndex !== lastWorkingIndex) {
-                    movingBullet.classList.remove("bounce");
-                    void movingBullet.offsetWidth; // Force reflow
-                    movingBullet.classList.add("bounce");
-                }
-
-                lastWorkingIndex = workingIndex;
             } else {
-                // Bullet sanft verschwinden lassen
-                movingBullet.style.opacity = 0;
-                movingBullet.classList.remove("bounce");
-                lastWorkingIndex = -1;
+                // mp3 entfernen
+                [...containerSelect.options].forEach(opt => {
+                    if (opt.value === "mp3") opt.remove();
+                });
             }
+        }
+
+        // Initial check
+        updateContainers();
+
+        // Event Listener
+        audioCheckbox.addEventListener("change", updateContainers);
+        videoCheckbox.addEventListener("change", updateContainers);
+    });
+
+    // Task list
+    //var socket = io();
+
+    var movingBullet = document.getElementById("moving-bullet");
+    var lastWorkingIndex = -1;
+
+    socket.on("update_tasks", function(tasks) {
+        let list = document.getElementById("tasks");
+        list.innerHTML = "";
+
+        let workingIndex = -1;
+
+        tasks.forEach((task, index) => {
+            let li = document.createElement("li");
+            li.className = "list-group-item";
+            li.textContent = task.name;
+            li.style.color = task.status === "done" ? "green" : "white";
+            if (task.status === "done") li.style.textDecoration = "line-through";
+
+            list.appendChild(li);
+
+            if (task.status === "working") workingIndex = index;
         });
 
-        // current video
-        socket.on("current_video", function(data) {
-    const titleEl = document.getElementById("video-title");
+        if (workingIndex !== -1) {
+            let li = list.children[workingIndex];
+            let bulletOffsetX = 8;
+            let bulletOffsetY = (li.offsetHeight - 12) / 2;
 
-    titleEl.textContent = data;
+            // Bullet sichtbar machen
+            movingBullet.style.opacity = 1;
+            movingBullet.style.left = bulletOffsetX + "px";
+            movingBullet.style.top = (li.offsetTop + bulletOffsetY) + "px";
+
+            // Bounce nur starten, wenn Task wechselt
+            if (workingIndex !== lastWorkingIndex) {
+                movingBullet.classList.remove("bounce");
+                void movingBullet.offsetWidth; // Force reflow
+                movingBullet.classList.add("bounce");
+            }
+
+            lastWorkingIndex = workingIndex;
+        } else {
+            // Bullet sanft verschwinden lassen
+            movingBullet.style.opacity = 0;
+            movingBullet.classList.remove("bounce");
+            lastWorkingIndex = -1;
+        }
+    });
+
+    // current video
+    socket.on("current_video", function(data) {
+const titleEl = document.getElementById("video-title");
+
+titleEl.textContent = data;
 });
-    </script>
+</script>
 </body>
 </html>
