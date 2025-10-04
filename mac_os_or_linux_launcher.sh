@@ -10,12 +10,24 @@ if ! command -v python3 &> /dev/null
 then
     echo "Python not found. Installing..."
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        sudo apt update && sudo apt install -y python3 python3-venv python3-pip
+        sudo apt update
+        sudo apt install -y python3 python3-pip python3-venv
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         brew install python
     fi
 else
     echo "Python is already installed."
+fi
+
+# ================================
+# Ensure python3-venv is installed (Ubuntu/Debian)
+# ================================
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    dpkg -s python3-venv &> /dev/null || {
+        echo "python3-venv not found. Installing..."
+        sudo apt update
+        sudo apt install -y python3-venv
+    }
 fi
 
 # ================================
@@ -25,7 +37,8 @@ if ! command -v ffmpeg &> /dev/null
 then
     echo "ffmpeg not found. Installing..."
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        sudo apt update && sudo apt install -y ffmpeg
+        sudo apt update
+        sudo apt install -y ffmpeg
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         brew install ffmpeg
     fi
