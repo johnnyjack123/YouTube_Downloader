@@ -62,7 +62,6 @@ def check_for_userdata():
 
 def ensure_ffmpeg():
     if shutil.which("ffmpeg") is not None:
-        print("ffmpeg found.")
         return "run"
     else:
         print("ffmpeg is not installed. It is necessary to have ffmpeg installed on your computer so the downloaded video and audio stream can merged together")

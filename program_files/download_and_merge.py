@@ -339,7 +339,7 @@ def download():
                     video_input = 'bv[height<=' + video_resolution + ']/best'
                 elif video_checkbox and audio_checkbox:
                     video_input = 'bv[height<=' + video_resolution + ']'
-                    audio_input = 'ba[height<=' + video_resolution + ']/best' # TODO: Fallback dynamisch machen
+                    audio_input = 'ba[height<=' + video_resolution + ']/best'
                 elif not video_checkbox and audio_checkbox:
                     #audio_input = 'ba[height<=' + video_resolution + ']'
                     audio_input = 'bestaudio'

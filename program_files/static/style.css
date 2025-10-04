@@ -236,7 +236,7 @@
     color: #ffffff;
 }
 
-/* Listen in TODO und Queue */
+/* Listen in to do und Queue */
 .list-group-item {
     background: rgba(255, 255, 255, 0.05);
     border: none;
@@ -245,7 +245,7 @@
     border-radius: 0.5rem;
 }
 
-/* Bullet in TODO */
+/* Bullet in to do */
 #moving-bullet {
     display: inline-block;
     width: 12px;

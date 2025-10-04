@@ -256,5 +256,3 @@ if __name__ == '__main__':
         print("Please restart this python script and the whole command line.")
     else:
         print("Error. Either ffmpeg is not installed or not entered in the system environment variables.")
-
-    # TODO: Automatische Installation und start über Batch-Datei, die auch venv aktiviert
