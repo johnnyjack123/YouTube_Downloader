@@ -100,6 +100,7 @@ def video_settings():
         audio_quality = False
     else:
         video_quality = request.form.get("video_quality")
+        print(f"Video quality: {video_quality}")
         video_quality, audio_quality = convert_text_to_command(video_quality, video_checkbox, audio_checkbox)
         file["custom_resolution_checkbox"] = False
 
@@ -256,4 +257,4 @@ if __name__ == '__main__':
     else:
         print("Error. Either ffmpeg is not installed or not entered in the system environment variables.")
 
-# TODO: Automatische Installation und start über Batch-Datei, die auch venv aktiviert
+    # TODO: Automatische Installation und start über Batch-Datei, die auch venv aktiviert

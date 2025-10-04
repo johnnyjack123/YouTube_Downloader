@@ -99,12 +99,12 @@ def ensure_ffmpeg():
 
 def create_task_list(video_data, video_task, audio_task, merge_task):
     task_list = []
+    file = read("file")
     if video_data["video_checkbox"]:
         task_list.append({"name": "Download Video", "status": video_task})
-    if video_data["audio_checkbox"]:
+    if video_data["audio_checkbox"] and video_data["audio_quality"]:
         task_list.append({"name": "Download Audio", "status": audio_task})
-    data = read("file")
-    if data["auto_merge"] == "yes":
+    if file["auto_merge"] == "yes" and video_data["video_checkbox"] and video_data["audio_checkbox"] and video_data["audio_quality"]:
         task_list.append({"name": "Merge", "status": merge_task})
     return task_list
 
@@ -125,7 +125,7 @@ def convert_text_to_command(description, video_checkbox, audio_checkbox):
 
     if audio_checkbox == "yes":
         if description == "Best":
-            cmd_audio = "bestaudio/best" #Not the best way, because by single video downloads there is noch fallback.
+            cmd_audio = "bestaudio/best" #Not the best way, because by single video downloads there is no fallback.
         elif description == "Average":
             if not video_checkbox == "yes" and audio_checkbox == "yes":
                 cmd_audio = "bestaudio/best"
@@ -162,7 +162,6 @@ def start_download():
 
 def manage_download():
     global download_process
-    print("Manage download.")
     while True:
         if global_variables.video_queue and not global_variables.abort:
 

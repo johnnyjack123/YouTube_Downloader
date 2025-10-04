@@ -170,7 +170,6 @@ def merging_video_audio(video_file, audio_file, output_file):
         if audio_codec.lower() != "aac":
             send_status("console", [f"Audio codec {audio_codec} not supported in MOV, re-encoding to AAC", source])
             audio_option = "aac"
-    send_status("console", [f"Before total frames", source])
 
     total_frames = get_frame_count_estimate(video_file)
     print(f"DEBUG: total_frames={total_frames!r}")
@@ -375,27 +374,28 @@ def download():
                     send_status("task_list", [current_video, video_task, audio_task, merge_task])
 
                 if audio_checkbox:
-                    download_type = "audio"
-                    audio_task = "working"
-                    send_status("task_list", [current_video, video_task, audio_task, merge_task])
+                    if audio_quality:
+                        download_type = "audio"
+                        audio_task = "working"
+                        send_status("task_list", [current_video, video_task, audio_task, merge_task])
 
-                    send_status("download_type", download_type)
-                    send_status("console", [f"Preparing to download {download_type}.", source])
+                        send_status("download_type", download_type)
+                        send_status("console", [f"Preparing to download {download_type}.", source])
 
-                    audio_file = download_audio(audio_input, download_folder, video_url)
+                        audio_file = download_audio(audio_input, download_folder, video_url)
 
-                    send_status("state_logger",True)  # So that logger knows, when new video starts, helps to display "Download" only once per video
-                    state_logger_download = True
-                    state_logger_prepare = True
-                    send_status("console", [f"Done downloading {download_type}.", source])
-                    audio_task = "done"
-                    send_status("task_list", [current_video, video_task, audio_task, merge_task])
+                        send_status("state_logger",True)  # So that logger knows, when new video starts, helps to display "Download" only once per video
+                        state_logger_download = True
+                        state_logger_prepare = True
+                        send_status("console", [f"Done downloading {download_type}.", source])
+                        audio_task = "done"
+                        send_status("task_list", [current_video, video_task, audio_task, merge_task])
 
                 file_data = read("file")
                 state_logger_download = False
                 state_logger_prepare = False
                 merge = file_data["auto_merge"]
-                if video_checkbox and audio_checkbox and merge:
+                if video_checkbox and audio_checkbox and merge and audio_quality:
                     merge_task = "working"
                     send_status("task_list", [current_video, video_task, audio_task, merge_task])
 
