@@ -27,7 +27,7 @@ def update_title_in_queue(title, video_url):
                 emit_queue()
 
 def update_current_video():
-    title = global_variables.current_name
+    title = global_variables.current_video_data["video_name"]
     socketio.emit("current_video", title)
     socketio.sleep(0)
 

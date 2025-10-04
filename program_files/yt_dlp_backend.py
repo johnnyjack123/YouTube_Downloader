@@ -73,7 +73,7 @@ def home():
     checkbox = read("custom_resolution_checkbox")
     video_checkbox = read("video_checkbox")
     audio_checkbox = read("audio_checkbox")
-    print(f"Video Quality List: {video_quality}")
+
     return render_template('index.html',
                            download_folder=download_folder,
                            video_quality=video_quality,
@@ -82,7 +82,8 @@ def home():
                            checkbox=checkbox,
                            console_socket=global_variables.console_socket,
                            video_checkbox=video_checkbox,
-                           audio_checkbox=audio_checkbox)
+                           audio_checkbox=audio_checkbox,
+                           abort=global_variables.abort)
 
 @app.route('/video_settings', methods=["GET", "POST"])
 def video_settings():
@@ -159,6 +160,7 @@ def abort():
     global_variables.abort = True
     console("Aborting download.", "python")
     abort_download()
+    video_queue.insert(0, global_variables.current_video_data)
     return redirect(url_for("home"))
 
 @app.route('/choose_download_folder_page', methods=["GET", "POST"])
@@ -215,23 +217,36 @@ def settings_page():
 @app.route('/settings', methods=["POST"])
 def settings():
     data = read("file")
+
     open_browser_window = request.form.get("open_browser_window")
     data["open_browser"] = open_browser_window
-    #save("open_browser", open_browser_window)
 
     auto_update = request.form.get("auto_update")
     data["auto_update"] = auto_update
-    #save("auto_update", auto_update)
 
     auto_merge = request.form.get("auto_merge")
     data["auto_merge"] = auto_merge
-    #save("auto_merge", auto_merge)
 
     download_previous_queue = request.form.get("download_previous_queue")
     data["download_previous_queue"] = download_previous_queue
-    #save("download_previous_queue", download_previous_queue)
+
     save("whole_file", data)
     return redirect(url_for("settings_page"))
+
+@app.route('/resume_download', methods=["GET"])
+def resume_download():
+    global_variables.abort = False
+    global_variables.video_queue.insert(0, global_variables.current_video_data)
+    console("Resuming download.", "python")
+    return redirect(url_for("home"))
+
+@app.route('/cancel_download', methods=["GET"])
+def cancel_download():
+    global_variables.abort = False
+    global_variables.video_queue = []
+    save("video_queue", [])
+    console("Aborted download", "python")
+    return redirect(url_for("home"))
 
 if __name__ == '__main__':
     result = ensure_ffmpeg()
@@ -252,12 +267,11 @@ if __name__ == '__main__':
         print("Error. Either ffmpeg is not installed or not entered in the system environment variables.")
 
 # TODO: Sinnlose prints löschen
-# TODO: README.MD aktualisieren wegen Qualitätseinstellungen und yt-dlp Library aktuell halte + automatischer Update und ffmpeg installieren
 # TODO: Pixabay Bild erwähnen in LIENSE.md
 # TODO: Console in Browser scrollbar machen
 # TODO: Standard hintergrund dunkel machen
-# TODO: Downloading REssources bei video download anzeigen lassen, bug
 # TODO: Console nicht scrollbar
 # TODO: Download Queue auf Seite von Console, damit Ladebalken nicht gekürzt wird, stattdessen cancel Download Button unter den PRogress Balken
 # TODO: Rechtschreibfehler in Logo fixen
 # TODO: Automatische Installation und start über Batch-Datei, die auch venv aktiviert
+# TODO: Cancel Button über separaten Socket channel

@@ -249,8 +249,10 @@ def manage_download():
             global_variables.is_downloading = True
             video_entry = global_variables.video_queue.pop(0)
             emit_queue()
-            global_variables.current_video_url = video_entry["video_url"]
-            global_variables.current_name = video_entry["video_name"]
+
+            #global_variables.current_video_url = video_entry["video_url"]
+            #global_variables.current_name = video_entry["video_name"]
+            global_variables.current_video_data = video_entry
             update_current_video()
             video_json = json.dumps(video_entry)
 
@@ -288,11 +290,11 @@ def manage_download():
                     #console("Subprocess output: " + str(line)) <-- uncomment for error messages in the web console
 
             download_process.wait()
-            print("Prozess beendet mit Code", download_process.returncode)
+            print("Process finished with code", download_process.returncode)
             global_variables.is_downloading = False
             save("video_queue", global_variables.video_queue)
         else:
-            global_variables.current_name = "No active download."
+            global_variables.current_video_data["video_name"] = "No active download."
             update_current_video()
             time.sleep(0.2)
 

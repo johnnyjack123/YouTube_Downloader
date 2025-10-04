@@ -141,8 +141,16 @@
         </div>
 
             <a id="cancel-download" href="{{ url_for('abort') }}" class="btn btn-gradient mb-4" style="display: none;">
+                Pause Download
+            </a>
+            {% if abort %}
+            <a href="{{ url_for('resume_download') }}" class="btn btn-gradient mb-4">
+                Resume Download
+            </a>
+            <a href="{{ url_for('cancel_download') }}" class="btn btn-gradient mb-4">
                 Cancel Download
             </a>
+            {% endif %}
         </div>
 
         <!-- Rechte Spalte: Konsole -->

@@ -5,8 +5,7 @@ is_downloading = False
 state_logger = True
 download_type = ""
 abort_flag = False
-current_video_url = ""
-current_name = "No active download."
+current_video_data = {}
 abort = False
 
 quality_map = {
