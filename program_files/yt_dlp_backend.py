@@ -156,11 +156,11 @@ def video_settings():
 
 @app.route('/abort', methods=["GET", "POST"])
 def abort():
-    #global_variables.abort_flag = True
     global_variables.abort = True
-    console("Aborting download.", "python")
+    console("Pause download.", "python")
     abort_download()
-    video_queue.insert(0, global_variables.current_video_data)
+    global_variables.video_queue.insert(0, global_variables.current_video_data)
+    save("video_queue", global_variables.video_queue)
     return redirect(url_for("home"))
 
 @app.route('/choose_download_folder_page', methods=["GET", "POST"])
@@ -270,8 +270,5 @@ if __name__ == '__main__':
 # TODO: Pixabay Bild erwähnen in LIENSE.md
 # TODO: Console in Browser scrollbar machen
 # TODO: Standard hintergrund dunkel machen
-# TODO: Console nicht scrollbar
-# TODO: Download Queue auf Seite von Console, damit Ladebalken nicht gekürzt wird, stattdessen cancel Download Button unter den PRogress Balken
 # TODO: Rechtschreibfehler in Logo fixen
 # TODO: Automatische Installation und start über Batch-Datei, die auch venv aktiviert
-# TODO: Cancel Button über separaten Socket channel

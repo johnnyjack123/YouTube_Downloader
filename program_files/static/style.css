@@ -262,10 +262,13 @@
     background: rgba(255, 255, 255, 0.05);
     border-radius: 1rem;
     padding: 1rem;
-    height: 100%;
-    overflow-y: scroll !important;
+    height: 250px;           /* feste Höhe */
+    overflow-y: auto !important;
     font-family: monospace;
     color: #00ffdd;
+    max-width: 100%;        /* nicht über Container hinaus */
+    word-wrap: break-word;  /* bricht lange Wörter */
+    overflow-wrap: anywhere;/* moderne Variante */
 }
 
 /* Fortschrittsanzeige moderner */
@@ -276,6 +279,12 @@
     color: #000;
     text-align: center;
 }
+
+.console-progress {
+    margin-top: 1rem;       /* Abstand zur Console */
+    width: 100%;            /* gleiche Breite wie Card */
+}
+
 
 /* Buttons leicht modernisieren */
 .btn-gradient {
@@ -445,6 +454,7 @@ body {
     background: rgba(255, 255, 255, 0.05); /* leichter Glaslook */
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 1rem;
 }
 
 .queue-header h3 {
@@ -465,6 +475,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    max-height: 200px;
+    overflow-y: auto;
 }
 
 .queue-icon {

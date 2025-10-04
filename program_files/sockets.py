@@ -14,6 +14,7 @@ def init_socket(socketio_instance):
         emit_queue()
         update_tasks()
         update_current_video()
+        cancel_button()
 
 def update_tasks():
     socketio.emit("update_tasks", global_variables.task_list)
@@ -77,3 +78,7 @@ def progress(status, percent, speed, eta):
             'speed': '0',
             'eta': '0',
             'message': 'Preparing...'})
+
+def cancel_button():
+    socketio.emit("cancel", global_variables.is_downloading)
+    socketio.sleep(0)

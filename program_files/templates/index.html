@@ -54,19 +54,12 @@
             </div>
         </div>
 
-        <div class="loading-container">
-            <div class="loading-bar">
-                <div class="progress-fill" id="progress-fill"></div>
-            </div>
-            <div class="progress-text" id="progress-text">0%</div>
-        </div>
-
         <!-- Download Queue -->
         <div class="card queue-card" style="flex: 2;">
             <div class="card-header queue-header">
                 <h3>Download Queue</h3>
             </div>
-            <div class="card-body" style="overflow-y:auto;">
+            <div class="card-body">
                 <ul id="queue" class="queue-list mb-0"></ul>
             </div>
         </div>
@@ -161,39 +154,43 @@
                 <div class="console" id="console"></div>
             </div>
         </div>
+         <div class="loading-container console-progress">
+            <div class="loading-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="progress-text" id="progress-text">0%</div>
+        </div>
     </div>
 </div>
-
-
     </div>
     <script>
         var socket = io();
         var cancelLink = document.getElementById('cancel-download');
 
-        socket.on('progress', function (data) {
-            if (cancelLink.style.display === 'none') {
-                cancelLink.style.display = 'inline-block';
-            }
+// Progress
+socket.on('progress', function (data) {
+    if (data.message) {
+        document.getElementById('progress-text').textContent = data.message;
+        return;
+    }
 
-            if (data.message) {
-                document.getElementById('progress-text').textContent = data.message;
-                if (data.percent === '100%') {
-                    cancelLink.style.display = 'none';
-                }
-                return;
-            }
+    let percent = parseFloat(data.percent);
+    const fill = document.getElementById("progress-fill");
+    const text = document.getElementById("progress-text");
 
-            let percent = parseFloat(data.percent);
-            const fill = document.getElementById("progress-fill");
-            const text = document.getElementById("progress-text");
+    fill.style.width = percent + "%";
+    text.textContent = `Progress: ${data.percent} | Speed: ${data.speed} | ETA: ${data.eta}`;
+});
 
-            fill.style.width = percent + "%";
-            text.textContent = `Progress: ${data.percent} | Speed: ${data.speed} | ETA: ${data.eta}`;
+// Cancel button
+socket.on("cancel", function (state) {
+    if (state === true) {
+        cancelLink.style.display = "inline-block";
+    } else {
+        cancelLink.style.display = "none";
+    }
+});
 
-            if (data.percent === '100%') {
-                cancelLink.style.display = 'none';
-            }
-        });
 
 
         // Console

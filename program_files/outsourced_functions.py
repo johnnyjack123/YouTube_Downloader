@@ -6,7 +6,7 @@ import shutil
 import sys
 import json
 import program_files.globals as global_variables
-from program_files.sockets import progress, console, update_tasks, emit_queue, update_current_video
+from program_files.sockets import progress, console, update_tasks, emit_queue, update_current_video, cancel_button
 import webbrowser
 import threading
 import time
@@ -247,6 +247,7 @@ def manage_download():
         if global_variables.video_queue and not global_variables.abort:
 
             global_variables.is_downloading = True
+            cancel_button()
             video_entry = global_variables.video_queue.pop(0)
             emit_queue()
 
@@ -292,6 +293,7 @@ def manage_download():
             download_process.wait()
             print("Process finished with code", download_process.returncode)
             global_variables.is_downloading = False
+            cancel_button()
             save("video_queue", global_variables.video_queue)
         else:
             global_variables.current_video_data["video_name"] = "No active download."
