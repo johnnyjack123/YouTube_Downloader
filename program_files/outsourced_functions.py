@@ -1,5 +1,3 @@
-import yt_dlp
-import json
 import subprocess
 import os
 import shutil
