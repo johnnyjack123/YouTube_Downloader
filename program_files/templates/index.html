@@ -156,6 +156,7 @@
                     <div class="console" id="console"></div>
                 </div>
             </div>
+
             <div class="loading-container console-progress">
                 <div class="loading-bar">
                     <div class="progress-fill" id="progress-fill"></div>
@@ -196,32 +197,35 @@ if (state === true) {
 
 
     // Console
-    const consoleBox = document.getElementById("console");
+const consoleBox = document.getElementById("console");
 
 const createMessage = (msg) => {
-if (Array.isArray(msg)) {
-    msg.forEach(entry => {
-        addLine(entry);
-    });
-} else {
-    addLine(msg);
-}
+    if (Array.isArray(msg)) {
+        msg.forEach(entry => addLine(entry));
+    } else {
+        addLine(msg);
+    }
 };
 
 function addLine(text) {
-const content = `
-    <div class="text">
-        <span>
-            <strong class="console-text">[console]</strong>: ${text}
-        </span>
-    </div>
-`;
-consoleBox.innerHTML += content;
+    const content = `
+        <div class="text">
+            <span>
+                <strong class="console-text">[console]</strong>: ${text}
+            </span>
+        </div>
+    `;
+    consoleBox.innerHTML += content;
+
+    //autoscroll
+    const consoleContainer = consoleBox.parentElement;
+    consoleContainer.scrollTop = consoleContainer.scrollHeight;
 }
 
 socket.on("console", (msg) => {
-createMessage(msg);
+    createMessage(msg);
 });
+
 
 
     // Queue
