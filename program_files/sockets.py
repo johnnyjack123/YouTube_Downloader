@@ -1,4 +1,5 @@
 import program_files.globals as global_variables
+from datetime import datetime
 
 socketio = None
 
@@ -43,9 +44,12 @@ def console(command, source):
 
     if source != "reload":
         print(f"[console] [{source}] {command}")
-        socketio.emit("console", f"[{source}] {command}")
+        now = datetime.now()
+        time_stamp = now.strftime("%H:%M:%S")
+        cmd = {"time_stamp": time_stamp, "message": f"[{source}] {command}"}
+        socketio.emit("console", cmd)
         socketio.sleep(0)
-        global_variables.console_socket.append(f"[{source}] {command}")
+        global_variables.console_socket.append(cmd)
         return
     else:
         socketio.emit("console", global_variables.console_socket)

@@ -139,13 +139,16 @@
                 Pause Download
             </a>
             {% if abort %}
-            <a href="{{ url_for('resume_download') }}" class="btn btn-gradient mb-4">
-                Resume Download
-            </a>
-            <a href="{{ url_for('cancel_download') }}" class="btn btn-gradient mb-4">
-                Cancel Download
-            </a>
-            {% endif %}
+<div class="d-flex gap-2 mb-4">
+    <a href="{{ url_for('resume_download') }}" class="btn btn-gradient flex-fill">
+        Resume Download
+    </a>
+    <a href="{{ url_for('cancel_download') }}" class="btn btn-gradient flex-fill">
+        Cancel Download
+    </a>
+</div>
+{% endif %}
+
         </div>
 
         <!-- Rechte Spalte: Konsole -->
@@ -207,17 +210,29 @@ const createMessage = (msg) => {
     }
 };
 
-function addLine(text) {
+function addLine(data) {
+    let timeStamp, message;
+
+    // Wenn es ein Objekt ist (vom Python-emit)
+    if (typeof data === "object" && data !== null) {
+        timeStamp = data.time_stamp;
+        message = data.message;
+    } else {
+        // Fallback (alte Daten ohne Zeitstempel)
+        timeStamp = "";
+        message = data;
+    }
+
     const content = `
-        <div class="text">
+        <div class="text" title="${timeStamp}">
             <span>
-                <strong class="console-text">[console]</strong>: ${text}
+                <strong class="console-text">[console]</strong>: ${message}
             </span>
         </div>
     `;
     consoleBox.innerHTML += content;
 
-    //autoscroll
+    // Autoscroll
     const consoleContainer = consoleBox.parentElement;
     consoleContainer.scrollTop = consoleContainer.scrollHeight;
 }
@@ -225,6 +240,7 @@ function addLine(text) {
 socket.on("console", (msg) => {
     createMessage(msg);
 });
+
 
 
 
