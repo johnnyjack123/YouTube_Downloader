@@ -146,15 +146,6 @@ def video_settings():
         emit_queue()
     return redirect(url_for("home"))
 
-@app.route('/abort', methods=["GET", "POST"])
-def abort():
-    global_variables.abort = True
-    console("Pause download.", "python")
-    abort_download()
-    global_variables.video_queue.insert(0, global_variables.current_video_data)
-    save("video_queue", global_variables.video_queue)
-    return redirect(url_for("home"))
-
 @app.route('/choose_download_folder_page', methods=["GET", "POST"])
 def choose_download_folder_page():
     folder = request.args.get("folder", "")
@@ -225,10 +216,19 @@ def settings():
     save("whole_file", data)
     return redirect(url_for("settings_page"))
 
+@app.route('/abort', methods=["GET", "POST"])
+def abort():
+    global_variables.abort = True
+    console("Pause download.", "python")
+    abort_download()
+    #global_variables.video_queue.insert(0, global_variables.current_video_data)
+    #save("video_queue", global_variables.video_queue)
+    return redirect(url_for("home"))
+
 @app.route('/resume_download', methods=["GET"])
 def resume_download():
     global_variables.abort = False
-    global_variables.video_queue.insert(0, global_variables.current_video_data)
+    #global_variables.video_queue.insert(0, global_variables.current_video_data)
     console("Resuming download.", "python")
     return redirect(url_for("home"))
 

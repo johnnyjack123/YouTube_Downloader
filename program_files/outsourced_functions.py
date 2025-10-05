@@ -161,14 +161,13 @@ def manage_download():
     global download_process
     while True:
         if global_variables.video_queue and not global_variables.abort:
-
             global_variables.is_downloading = True
             cancel_button()
-            video_entry = global_variables.video_queue.pop(0)
+            video_entry = global_variables.video_queue[0]
+            save("video_queue", global_variables.video_queue)
+            #video_entry = global_variables.video_queue.pop(0)
             emit_queue()
 
-            #global_variables.current_video_url = video_entry["video_url"]
-            #global_variables.current_name = video_entry["video_name"]
             global_variables.current_video_data = video_entry
             update_current_video()
             video_json = json.dumps(video_entry)
@@ -204,13 +203,21 @@ def manage_download():
                         print(data)
                 except json.JSONDecodeError:
                     print("Subprocess output:", line)
+                    save("video_queue", global_variables.video_queue)
                     #console("Subprocess output: " + str(line)) <-- uncomment for error messages in the web console
 
             download_process.wait()
             print("Process finished with code", download_process.returncode)
+
             global_variables.is_downloading = False
             cancel_button()
-            save("video_queue", global_variables.video_queue)
+
+            if download_process.returncode == 0 and not global_variables.abort:
+                global_variables.video_queue.pop(0)
+                save("video_queue", global_variables.video_queue)
+            else:
+                console("Download interrupted — keeping in queue.", "python")
+                save("video_queue", global_variables.video_queue)
         else:
             global_variables.current_video_data["video_name"] = "No active download."
             update_current_video()

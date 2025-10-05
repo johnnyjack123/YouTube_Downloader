@@ -53,7 +53,7 @@ def console(command, source):
 
 def emit_queue():
     # Take names of videos
-    queue_names = [video["video_name"] for video in global_variables.video_queue]
+    queue_names = [video["video_name"] for video in global_variables.video_queue[1:]]
     socketio.emit("queue", queue_names)
     socketio.sleep(0)
 
