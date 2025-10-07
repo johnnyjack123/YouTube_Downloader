@@ -9,6 +9,7 @@ from program_files.outsourced_functions import (save, read,
 import program_files.globals as global_variables
 from program_files.yt_dlp_functions import update_yt_dlp, start_get_name
 from datetime import datetime
+from program_files.sockets import cancel_button
 
 logging.basicConfig(
     filename="program_files/debug2.log",
@@ -221,6 +222,8 @@ def abort():
     global_variables.abort = True
     console("Pause download.", "python")
     abort_download()
+    global_variables.is_downloading = False
+    cancel_button()
     #global_variables.video_queue.insert(0, global_variables.current_video_data)
     #save("video_queue", global_variables.video_queue)
     return redirect(url_for("home"))

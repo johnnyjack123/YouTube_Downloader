@@ -140,12 +140,13 @@
             </a>
             {% if abort %}
 <div class="d-flex gap-2 mb-4">
-    <a href="{{ url_for('resume_download') }}" class="btn btn-gradient flex-fill">
-        Resume Download
-    </a>
     <a href="{{ url_for('cancel_download') }}" class="btn btn-gradient flex-fill">
         Cancel Download
     </a>
+    <a href="{{ url_for('resume_download') }}" class="btn btn-gradient flex-fill">
+        Resume Download
+    </a>
+
 </div>
 {% endif %}
 
