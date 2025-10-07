@@ -24,7 +24,7 @@ def read(entry):
             return video_data
 
 def get_frame_count_estimate(video_file):
-    # --- 1. Versuch: direkt nb_frames auslesen ---
+    # --- 1. Versuch: nb_frames direkt auslesen ---
     cmd_nb = [
         'ffprobe', '-v', 'error',
         '-select_streams', 'v:0',
@@ -39,46 +39,51 @@ def get_frame_count_estimate(video_file):
         try:
             return int(nb_frames_str)
         except ValueError:
-            pass  # Fallback auf Berechnung
+            pass  # Fallback
 
     # --- 2. Fallback: fps × duration ---
-    cmd_fallback = [
+    cmd_fps = [
         'ffprobe', '-v', 'error',
         '-select_streams', 'v:0',
-        '-show_entries', 'stream=avg_frame_rate,duration',
+        '-show_entries', 'stream=avg_frame_rate',
         '-of', 'default=noprint_wrappers=1:nokey=1',
         video_file
     ]
-    result_fb = subprocess.run(cmd_fallback, capture_output=True, text=True)
-    lines = result_fb.stdout.strip().splitlines()
+    fps_str = subprocess.run(cmd_fps, capture_output=True, text=True).stdout.strip()
 
-    if len(lines) >= 2:
-        fps_str, duration_str = lines[0].strip(), lines[1].strip()
+    cmd_dur = [
+        'ffprobe', '-v', 'error',
+        '-show_entries', 'format=duration',
+        '-of', 'default=noprint_wrappers=1:nokey=1',
+        video_file
+    ]
+    duration_str = subprocess.run(cmd_dur, capture_output=True, text=True).stdout.strip()
 
-        fps = 0.0
-        if fps_str and fps_str != "N/A":
-            try:
-                if "/" in fps_str:
-                    num, den = map(int, fps_str.split('/'))
-                    if den != 0:
-                        fps = num / den
-                else:
-                    fps = float(fps_str)
-            except Exception:
-                fps = 0.0
+    fps = 0.0
+    if fps_str and fps_str != "N/A":
+        try:
+            if "/" in fps_str:
+                num, den = map(int, fps_str.split('/'))
+                if den != 0:
+                    fps = num / den
+            else:
+                fps = float(fps_str)
+        except Exception:
+            fps = 0.0
 
-        duration = 0.0
-        if duration_str and duration_str != "N/A":
-            try:
-                duration = float(duration_str)
-            except Exception:
-                duration = 0.0
+    duration = 0.0
+    if duration_str and duration_str != "N/A":
+        try:
+            duration = float(duration_str)
+        except Exception:
+            duration = 0.0
 
-        if fps > 0 and duration > 0:
-            return int(duration * fps)
+    if fps > 0 and duration > 0:
+        return int(duration * fps)
 
     # --- Wenn gar nichts geht ---
     return 0
+
 
 
 def send_status(function_name, function_args):
@@ -128,6 +133,8 @@ class Logger:
     def error(self, msg):
         print("ERROR:", msg)
         send_status("console", [msg, "yt-dlp error"])
+
+
 
 def merging_video_audio(video_file, audio_file, output_file):
     source = "python"
