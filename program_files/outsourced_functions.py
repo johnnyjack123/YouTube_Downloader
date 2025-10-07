@@ -99,9 +99,9 @@ def create_task_list(video_data, video_task, audio_task, merge_task):
     file = read("file")
     if video_data["video_checkbox"]:
         task_list.append({"name": "Download Video", "status": video_task})
-    if video_data["audio_checkbox"] and video_data["audio_quality"]:
+    if video_data["audio_checkbox"]:
         task_list.append({"name": "Download Audio", "status": audio_task})
-    if file["auto_merge"] == "yes" and video_data["video_checkbox"] and video_data["audio_checkbox"] and video_data["audio_quality"]:
+    if file["auto_merge"] == "yes" and video_data["video_checkbox"] and video_data["audio_checkbox"]:
         task_list.append({"name": "Merge", "status": merge_task})
     return task_list
 
