@@ -261,7 +261,7 @@ if __name__ == '__main__':
         update_yt_dlp()
         check_for_queue()
         start_download()
-        socketio.run(app, host="0.0.0.0", port=5000, debug=True)
+        socketio.run(app, host="0.0.0.0", port=5000, debug=False)
 
     elif result == "restart":
         print("Please restart this python script and the whole command line.")
