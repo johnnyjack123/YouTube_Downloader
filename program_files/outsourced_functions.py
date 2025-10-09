@@ -44,7 +44,6 @@ def check_for_userdata():
         "video_resolution": "1080",
         "video_resolution_command": "bv[height<=1080]+ba[height<=1080]",
         "video_container": "mp4",
-        "mp3_container": False,
         "custom_resolution_checkbox": False,
         "video_checkbox": True,
         "audio_checkbox": True,
@@ -53,7 +52,8 @@ def check_for_userdata():
         "auto_update": "yes",
         "auto_merge": "yes",
         "download_previous_queue": "yes",
-        "video_queue": []
+        "video_queue": [],
+        "force_h264": False
     }
     if not os.path.exists(userdata_file):
         with open(userdata_file, "w", encoding="utf-8") as f:

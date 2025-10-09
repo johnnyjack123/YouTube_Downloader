@@ -82,6 +82,20 @@
             </label>
         </div>
 
+        <!-- Force h264 codec -->
+        <div class="form-check mb-3">
+            {% if force_h264 %}
+            <input type="checkbox" name="force_h264" value="yes"
+                   class="form-check-input" id="forceh264" checked>
+            {% else %}
+            <input type="checkbox" name="force_h264" value="yes"
+                   class="form-check-input" id="forceh264">
+            {% endif %}
+            <label for="forceh264" class="form-check-label">
+                Force h264 codec for downloaded and merged videos. This highers the compatibility, but result maybe in longer merging times.
+            </label>
+        </div>
+
         <hr class="my-4">
 
         <input type="submit" class="btn btn-info w-100 btn-download" value="Save settings">

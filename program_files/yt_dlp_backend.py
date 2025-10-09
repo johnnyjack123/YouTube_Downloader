@@ -71,9 +71,9 @@ def home():
         video_container.remove(default_video_container)
         video_container.insert(0, default_video_container)
 
-    checkbox = read("custom_resolution_checkbox")
-    video_checkbox = read("video_checkbox")
-    audio_checkbox = read("audio_checkbox")
+    checkbox = data["custom_resolution_checkbox"]
+    video_checkbox = data["video_checkbox"]
+    audio_checkbox = data["audio_checkbox"]
 
     return render_template('index.html',
                            download_folder=download_folder,
@@ -195,11 +195,13 @@ def settings_page():
     auto_update = data["auto_update"]
     auto_merge = data["auto_merge"]
     download_previous_queue = data["download_previous_queue"]
+    force_h264 = data["force_h264"]
     return render_template('settings.html',
                            open_browser_window=open_browser_window,
                            auto_update=auto_update,
                            auto_merge=auto_merge,
-                           download_previous_queue=download_previous_queue)
+                           download_previous_queue=download_previous_queue,
+                           force_h264=force_h264)
 
 @app.route('/settings', methods=["POST"])
 def settings():
@@ -216,6 +218,9 @@ def settings():
 
     download_previous_queue = request.form.get("download_previous_queue")
     data["download_previous_queue"] = download_previous_queue
+
+    force_h264 = request.form.get("force_h264")
+    data["force_h264"] = force_h264
 
     save("whole_file", data)
     return redirect(url_for("settings_page"))

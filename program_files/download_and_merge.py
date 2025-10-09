@@ -165,7 +165,19 @@ def merging_video_audio(video_file, audio_file, output_file):
 
     # --- Default: try copy ---
     audio_option = "copy" if audio_codec.lower() == "aac" else "aac"
-    video_option = "copy"
+
+    file = read("file")
+    if file["force_h264"]:
+        is_mp4_container = video_file.lower().endswith(".mp4")
+
+        if is_mp4_container and video_codec.lower() == "h264":
+            send_status("console", ["MP4 with H.264 detected – muxing without re-encode.", source])
+            video_option = "copy"  # Nur stream kopieren
+        else:
+            send_status("console", [f"Re-encoding video to H.264 (was: {video_codec})", source])
+            video_option = "libx264"
+    else:
+        video_option = "copy"
 
     # --- Container compatibility check ---
     if output_file.lower().endswith(".mov"):
@@ -177,6 +189,8 @@ def merging_video_audio(video_file, audio_file, output_file):
         if audio_codec.lower() != "aac":
             send_status("console", [f"Audio codec {audio_codec} not supported in MOV, re-encoding to AAC", source])
             audio_option = "aac"
+
+
 
     total_frames = get_frame_count_estimate(video_file)
     print(f"DEBUG: total_frames={total_frames!r}")
