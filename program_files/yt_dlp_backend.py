@@ -65,8 +65,11 @@ def home():
     video_resolution.insert(0, default_video_resolution)
 
     default_video_container = data["video_container"]
-    video_container.remove(default_video_container)
-    video_container.insert(0, default_video_container)
+    if default_video_container == "mp3":
+        video_container.insert(0, "mp3")
+    else:
+        video_container.remove(default_video_container)
+        video_container.insert(0, default_video_container)
 
     checkbox = read("custom_resolution_checkbox")
     video_checkbox = read("video_checkbox")
@@ -120,8 +123,8 @@ def video_settings():
         file["audio_checkbox"] = False
 
     video_container = request.form.get("video_container")
-    if not video_container == "mp3":
-        file["video_container"] = video_container
+    #if not video_container == "mp3":
+    file["video_container"] = video_container
     video_url = request.form.get("video_url")
 
     save("whole_file", file)
