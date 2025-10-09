@@ -44,6 +44,7 @@ def check_for_userdata():
         "video_resolution": "1080",
         "video_resolution_command": "bv[height<=1080]+ba[height<=1080]",
         "video_container": "mp4",
+        "mp3_container": False,
         "custom_resolution_checkbox": False,
         "video_checkbox": True,
         "audio_checkbox": True,
@@ -97,12 +98,16 @@ def ensure_ffmpeg():
 def create_task_list(video_data, video_task, audio_task, merge_task):
     task_list = []
     file = read("file")
-    if video_data["video_checkbox"]:
-        task_list.append({"name": "Download Video", "status": video_task})
-    if video_data["audio_checkbox"]:
+    if video_data["video_container"] != "mp3":
+        if video_data["video_checkbox"]:
+            task_list.append({"name": "Download Video", "status": video_task})
+        if video_data["audio_checkbox"]:
+            task_list.append({"name": "Download Audio", "status": audio_task})
+        if file["auto_merge"] == "yes" and video_data["video_checkbox"] and video_data["audio_checkbox"]:
+            task_list.append({"name": "Merge", "status": merge_task})
+    else:
         task_list.append({"name": "Download Audio", "status": audio_task})
-    if file["auto_merge"] == "yes" and video_data["video_checkbox"] and video_data["audio_checkbox"]:
-        task_list.append({"name": "Merge", "status": merge_task})
+        task_list.append({"name": "Re-encode audio to mp3", "status": merge_task})
     return task_list
 
 def open_browser():

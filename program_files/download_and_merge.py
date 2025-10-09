@@ -283,8 +283,8 @@ def download_video(video_input, download_folder, video_url):
         'format': video_input,
         'outtmpl': os.path.join(download_folder, '%(title)s_video.%(ext)s'),
         'progress_hooks': [progress_hook],
-        'no_color': True,
-        # Suppresses coloured output, as otherwise the numbers cannot be displayed correctly in the browser
+        'no_color': True, # Suppresses coloured output, as otherwise the numbers cannot be displayed correctly in the browser
+        'restrictfilenames': True,
         'logger': Logger()
     }
 
@@ -298,8 +298,8 @@ def download_audio(audio_input, download_folder, video_url):
         'format': audio_input,
         'outtmpl': os.path.join(download_folder, '%(title)s_audio.%(ext)s'),
         'progress_hooks': [progress_hook],
-        'no_color': True,
-        # Suppresses coloured output, as otherwise the numbers cannot be displayed correctly in the browser
+        'no_color': True, # Suppresses coloured output, as otherwise the numbers cannot be displayed correctly in the browser
+        'restrictfilenames': True,
         'logger': Logger()
     }
 
@@ -419,10 +419,16 @@ def download():
                         send_status("console", ["Merging failed. Downloaded video and audio are still storaged in your download folder.", source])
 
                 elif not video_checkbox and audio_checkbox and video_container == "mp3": # Exception for mp3 Format, so you can download for example music as a mp3 file
+                    merge_task = "working"
+                    send_status("task_list", [current_video, video_task, audio_task, merge_task])
+
                     send_status("console", ["Convert audio in mp3...", source])
                     output_file = audio_file + "_merged." + video_container
                     result = convert_audio_to_mp3(audio_file, output_file)
                     if result:
+                        print("In result.")
+                        merge_task = "done"
+                        send_status("task_list", [current_video, video_task, audio_task, merge_task])
                         send_status("console", ["Converting successful.", source])
                         os.remove(audio_file)
                     else:
