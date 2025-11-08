@@ -8,17 +8,18 @@ from program_files.outsourced_functions import (save, read,
                                                 convert_text_to_command, search_download_folder, start_download, abort_download, check_for_queue)
 import program_files.globals as global_variables
 from program_files.yt_dlp_functions import update_yt_dlp, start_get_name
-from datetime import datetime
 from program_files.sockets import cancel_button
 
-logging.basicConfig(
-    filename="program_files/debug2.log",
-    level=logging.DEBUG,
-    format="%(asctime)s.%(msecs)03d [%(levelname)s] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
-)
+logger = logging.getLogger("yt_dlp_gui_logger")
+logger.setLevel(logging.INFO)
 
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+file_handler = logging.FileHandler("yt_dlp_gui.log")
+file_handler.setLevel(logging.INFO)
+
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s", "%Y-%m-%d %H:%M:%S")
+file_handler.setFormatter(formatter)
+
+logger.addHandler(file_handler)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Directory of this file
 userdata_file = os.path.join(BASE_DIR, "..", "userdata.json")
@@ -41,10 +42,6 @@ socketio = SocketIO(app, async_mode="threading", cors_allowed_origins="*")
 import program_files.sockets as sockets
 from program_files.sockets import console, emit_queue
 sockets.init_socket(socketio)
-
-def log_event(msg: str):
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-    logging.debug(msg)
 
 @app.route('/', methods=["GET", "POST"])
 def home():
@@ -88,7 +85,6 @@ def home():
 
 @app.route('/video_settings', methods=["GET", "POST"])
 def video_settings():
-    #log_event(global_variables.console_socket)
     global_variables.abort = False
     custom_resolution = request.form.get("custom_resolution")
     video_checkbox = request.form.get("video_checkbox")
