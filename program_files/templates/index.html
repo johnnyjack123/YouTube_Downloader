@@ -80,7 +80,22 @@
                         {% for quality in video_quality %}
                         <option value="{{ quality }}">{{ quality }}</option>
                         {% endfor %}
+
+                        {% if checkbox %}
+                        <option value="custom" selected>Custom</option>
+                        {% else %}
+                        <option value="custom">Custom</option>
+                        {% endif %}
                     </select>
+
+                    <span id="custom_video_resolution_container" style="display: none;">
+                        <label class="form-label"><strong>Custom Video Resolution</strong></label>
+                        <select name="video_resolution" class="form-select mb-2">
+                            {% for resolution in video_resolution %}
+                            <option value="{{ resolution }}">{{ resolution }}</option>
+                            {% endfor %}
+                        </select>
+                    </span>
 
                     {% if video_checkbox %}
                     <input type="checkbox" name="video_checkbox" value="yes" class="form-check-input" id="videoCheckbox"
@@ -100,7 +115,7 @@
                     {% endif %}
                     <label for="audioCheckbox" class="form-check-label">Download Audio</label>
 
-                    <hr class="my-4">
+                    <!-- <hr class="my-4">
 
                     <label class="form-label"><strong>Custom Video Resolution</strong></label>
                     <select name="video_resolution" class="form-select mb-2">
@@ -118,7 +133,7 @@
                                id="customRes">
                         {% endif %}
                         <label for="customRes" class="form-check-label">Use custom resolution</label>
-                    </div>
+                    </div> -->
 
                     <hr class="my-4">
 
@@ -279,6 +294,9 @@ queue.forEach(videoName => {
         const audioCheckbox = document.getElementById("audioCheckbox");
         const videoCheckbox = document.getElementById("videoCheckbox");
         const containerSelect = document.querySelector("select[name='video_container']");
+        const videoQualitySelect = document.querySelector('select[name="video_quality"]');
+
+        const form = document.querySelector('form');
 
         const mp3Option = document.createElement("option");
         mp3Option.value = "mp3";
@@ -298,12 +316,38 @@ queue.forEach(videoName => {
             }
         }
 
+        function checkCustomQuality(selectedQuality) {
+        if (selectedQuality == "custom") {
+            document.getElementById("custom_video_resolution_container").style.display = "inline";
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'custom_resolution';
+            hiddenInput.value = 'yes';
+            hiddenInput.id = 'custom_resolution';
+
+            form.appendChild(hiddenInput);
+
+        } else {
+            document.getElementById("custom_video_resolution_container").style.display = "none";
+            const element = document.getElementById('custom_resolution');
+            if (element) {
+                element.remove();
+            }
+        }
+    }
+
         // Initial check
         updateContainers();
+        checkCustomQuality(videoQualitySelect.value);
 
         // Event Listener
         audioCheckbox.addEventListener("change", updateContainers);
         videoCheckbox.addEventListener("change", updateContainers);
+
+        // Listen to changes of the video quality select box
+        videoQualitySelect.addEventListener('change', (event) => {
+            checkCustomQuality(event.target.value);
+        });
     });
 
     // Task list

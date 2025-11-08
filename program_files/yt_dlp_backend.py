@@ -49,7 +49,7 @@ def log_event(msg: str):
 @app.route('/', methods=["GET", "POST"])
 def home():
     video_quality = ["bestvideo", "best", "worstvideo"]
-    video_resolution = ["720", "1080", "1920", "1440", "2160"]
+    video_resolution = ["720", "1080", "1440", "1920", "2160"]
     video_container = ["mp4", "mov", "mkv", "webm", "avi"]
 
     data = read("file")
