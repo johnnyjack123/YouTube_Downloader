@@ -3,8 +3,11 @@
 /dist/
 /build/
 /program_files/debug.log
+/program_files/debug2.log
 /tmp5esiqv74.tmp
 /tmpqrybo2rj.tmp
 /tmpsk_9e0zd.tmp
 /tmpx64mmsip.tmp
 /yt-dlp_backend.spec
+program_files/__pycache__/
+tmp/

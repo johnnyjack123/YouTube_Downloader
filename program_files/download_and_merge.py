@@ -295,7 +295,7 @@ def convert_audio_to_mp3(input_file, output_file):
 def download_video(video_input, download_folder, video_url):
     ydl_opts_video = {
         'format': video_input,
-        'outtmpl': os.path.join(download_folder, '%(title)s_video.%(ext)s'),
+        'outtmpl': os.path.join(download_folder, '%(title)s_video'),
         'progress_hooks': [progress_hook],
         'no_color': True, # Suppresses coloured output, as otherwise the numbers cannot be displayed correctly in the browser
         'restrictfilenames': True,
@@ -310,7 +310,7 @@ def download_video(video_input, download_folder, video_url):
 def download_audio(audio_input, download_folder, video_url):
     ydl_opts_audio = {
         'format': audio_input,
-        'outtmpl': os.path.join(download_folder, '%(title)s_audio.%(ext)s'),
+        'outtmpl': os.path.join(download_folder, '%(title)s_audio'),
         'progress_hooks': [progress_hook],
         'no_color': True, # Suppresses coloured output, as otherwise the numbers cannot be displayed correctly in the browser
         'restrictfilenames': True,
@@ -347,6 +347,7 @@ def download():
         custom_resolution = current_video["custom_resolution_checkbox"]
         video_checkbox = current_video["video_checkbox"]
         audio_checkbox = current_video["audio_checkbox"]
+        filename_addition = ""
 
         if video_url:
             send_status("progress", ["preparing", 0, 0, 0])
@@ -356,6 +357,7 @@ def download():
                 return "Not valid folder"
 
             if custom_resolution == "yes":
+                filename_addition = video_resolution
                 if video_checkbox and not audio_checkbox:
                     video_input = 'bv[height<=' + video_resolution + ']/best'
                 elif video_checkbox and audio_checkbox:
@@ -370,11 +372,17 @@ def download():
             else:
                 if video_checkbox and not audio_checkbox:
                     video_input = video_quality
+
+                    filename_addition = video_quality
                 elif video_checkbox and audio_checkbox:
                     video_input = video_quality
                     audio_input = audio_quality
+
+                    filename_addition = video_quality
                 elif not video_checkbox and audio_checkbox:
                     audio_input = audio_quality
+
+                    filename_addition = audio_quality
                 else:
                     send_status("console", ["No stream selected.", source])
             try:
@@ -420,7 +428,7 @@ def download():
                     send_status("task_list", [current_video, video_task, audio_task, merge_task])
 
                     send_status("console", ["Merging video and audio stream.", source])
-                    output_file = video_file + "_merged." + video_container
+                    output_file = video_file + "_" + filename_addition + "_merged." + video_container
                     result = merging_video_audio(video_file, audio_file, output_file)
                     if result:
                         send_status("console", ["Merging successful.", source])
@@ -437,7 +445,7 @@ def download():
                     send_status("task_list", [current_video, video_task, audio_task, merge_task])
 
                     send_status("console", ["Convert audio in mp3...", source])
-                    output_file = audio_file + "_merged." + video_container
+                    output_file = audio_file + "_" + filename_addition + "_merged." + video_container
                     result = convert_audio_to_mp3(audio_file, output_file)
                     if result:
                         print("In result.")
