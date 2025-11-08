@@ -13,17 +13,6 @@ if %errorlevel% neq 0 (
 )
 
 :: ================================
-:: Check if ffmpeg is installed
-:: ================================
-where ffmpeg >nul 2>nul
-if %errorlevel% neq 0 (
-    echo ffmpeg not found. Installing via winget...
-    winget install -e --id Gyan.FFmpeg
-) else (
-    echo ffmpeg is already installed.
-)
-
-:: ================================
 :: Virtual environment setup
 :: ================================
 if not exist "venv" (
