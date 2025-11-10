@@ -3,22 +3,23 @@ from flask_socketio import SocketIO
 import os
 import json
 import logging
+import argparse
 from program_files.outsourced_functions import (save, read,
-                                                check_for_userdata, ensure_ffmpeg, open_browser, convert_command_to_text,
-                                                convert_text_to_command, search_download_folder, start_download, abort_download, check_for_queue)
+                                                check_for_userdata, ensure_ffmpeg, open_browser,
+                                                convert_command_to_text,
+                                                convert_text_to_command, search_download_folder, start_download,
+                                                abort_download, check_for_queue, check_for_update_launcher)
 import program_files.globals as global_variables
 from program_files.yt_dlp_functions import update_yt_dlp, start_get_name
 from datetime import datetime
 from program_files.sockets import cancel_button
 
-logging.basicConfig(
-    filename="program_files/debug2.log",
-    level=logging.DEBUG,
-    format="%(asctime)s.%(msecs)03d [%(levelname)s] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
-)
+parser = argparse.ArgumentParser()
+parser.add_argument("--project-dir", default=None)
+args, _ = parser.parse_known_args()
 
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+if args.project_dir:
+    global_variables.project_dir = args.project_dir
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Directory of this file
 userdata_file = os.path.join(BASE_DIR, "..", "userdata.json")
@@ -53,27 +54,29 @@ def home():
     video_container = ["mp4", "mov", "mkv", "webm", "avi"]
 
     data = read("file")
-    download_folder = data["download_folder"]
+    program_data = data["program_data"]
+    download_data = data["download_data"]
+    download_folder = program_data["download_folder"]
 
-    default_video_quality = data["video_quality"]
+    default_video_quality = download_data["video_quality"]
     video_quality.remove(default_video_quality)
     video_quality.insert(0, default_video_quality)
     video_quality = convert_command_to_text(video_quality)
 
-    default_video_resolution = data["video_resolution"]
+    default_video_resolution = download_data["video_resolution"]
     video_resolution.remove(default_video_resolution)
     video_resolution.insert(0, default_video_resolution)
 
-    default_video_container = data["video_container"]
+    default_video_container = download_data["video_container"]
     if default_video_container == "mp3":
         video_container.insert(0, "mp3")
     else:
         video_container.remove(default_video_container)
         video_container.insert(0, default_video_container)
 
-    checkbox = data["custom_resolution_checkbox"]
-    video_checkbox = data["video_checkbox"]
-    audio_checkbox = data["audio_checkbox"]
+    checkbox = download_data["custom_resolution_checkbox"]
+    video_checkbox = download_data["video_checkbox"]
+    audio_checkbox = download_data["audio_checkbox"]
 
     return render_template('index.html',
                            download_folder=download_folder,
@@ -88,45 +91,45 @@ def home():
 
 @app.route('/video_settings', methods=["GET", "POST"])
 def video_settings():
-    #log_event(global_variables.console_socket)
     global_variables.abort = False
     custom_resolution = request.form.get("custom_resolution")
     video_checkbox = request.form.get("video_checkbox")
     audio_checkbox = request.form.get("audio_checkbox")
     file = read("file")
+    download_data = file["download_data"]
     if custom_resolution == "yes":
         video_resolution = request.form.get("video_resolution")
         if not video_resolution:
             return "No resolution set"
-        file["video_resolution"] = video_resolution
-        file["custom_resolution_checkbox"] = True
+        download_data["video_resolution"] = video_resolution
+        download_data["custom_resolution_checkbox"] = True
         video_quality = False
         audio_quality = False
     else:
         video_quality = request.form.get("video_quality")
         print(f"Video quality: {video_quality}")
         video_quality, audio_quality = convert_text_to_command(video_quality, video_checkbox, audio_checkbox)
-        file["custom_resolution_checkbox"] = False
+        download_data["custom_resolution_checkbox"] = False
 
         video_resolution = False
         if video_quality:
-            file["video_quality"] = video_quality
+            download_data["video_quality"] = video_quality
 
     if video_checkbox == "yes":
-        file["video_checkbox"] = True
+        download_data["video_checkbox"] = True
     else:
-        file["video_checkbox"] = False
+        download_data["video_checkbox"] = False
 
     if audio_checkbox == "yes":
-        file["audio_checkbox"] = True
+        download_data["audio_checkbox"] = True
     else:
-        file["audio_checkbox"] = False
+        download_data["audio_checkbox"] = False
 
     video_container = request.form.get("video_container")
     #if not video_container == "mp3":
-    file["video_container"] = video_container
+    download_data["video_container"] = video_container
     video_url = request.form.get("video_url")
-
+    file["download_data"] = download_data
     save("whole_file", file)
     found = next((v for v in global_variables.video_queue if v["video_url"] == video_url), None)
 
@@ -174,13 +177,12 @@ def choose_download_folder():
 
 @app.route('/change_download_folder', methods=["GET", "POST"])
 def change_download_folder():
-    global userdata_file
-    with open(userdata_file, "r", encoding="utf-8") as file:
-        data = json.load(file)
-        data["download_folder"] = request.args.get("path")
-    with open(userdata_file, "w", encoding="utf-8") as file:
-        json.dump(data, file, ensure_ascii=False, indent=4)
-        return redirect(url_for("home"))
+    file = read("file")
+    program_data = file["program_data"]
+    program_data["download_folder"] = request.args.get("path")
+    file["program_data"] = program_data
+    save("whole_file", file)
+    return redirect(url_for("home"))
 
 @app.route('/previous_folder', methods=["GET", "POST"])
 def previous_folder():
@@ -191,11 +193,15 @@ def previous_folder():
 @app.route('/settings_page', methods=["GET"])
 def settings_page():
     data = read("file")
-    open_browser_window = data["open_browser"]
-    auto_update = data["auto_update"]
-    auto_merge = data["auto_merge"]
-    download_previous_queue = data["download_previous_queue"]
-    force_h264 = data["force_h264"]
+    userdata = data["userdata"]
+    download_data = data["download_data"]
+
+    open_browser_window = userdata["open_browser"]
+    auto_update = userdata["auto_update"]
+    auto_merge = download_data["auto_merge"]
+    download_previous_queue = userdata["download_previous_queue"]
+    force_h264 = userdata["force_h264"]
+
     return render_template('settings.html',
                            open_browser_window=open_browser_window,
                            auto_update=auto_update,
@@ -206,21 +212,26 @@ def settings_page():
 @app.route('/settings', methods=["POST"])
 def settings():
     data = read("file")
+    userdata = data["userdata"]
+    download_data = data["download_data"]
 
     open_browser_window = request.form.get("open_browser_window")
-    data["open_browser"] = open_browser_window
+    userdata["open_browser"] = open_browser_window
 
     auto_update = request.form.get("auto_update")
-    data["auto_update"] = auto_update
+    userdata["auto_update"] = auto_update
 
     auto_merge = request.form.get("auto_merge")
-    data["auto_merge"] = auto_merge
+    download_data["auto_merge"] = auto_merge
 
     download_previous_queue = request.form.get("download_previous_queue")
-    data["download_previous_queue"] = download_previous_queue
+    userdata["download_previous_queue"] = download_previous_queue
 
     force_h264 = request.form.get("force_h264")
-    data["force_h264"] = force_h264
+    userdata["force_h264"] = force_h264
+
+    data["userdata"] = userdata
+    data["download_data"] = download_data
 
     save("whole_file", data)
     return redirect(url_for("settings_page"))
@@ -232,14 +243,11 @@ def abort():
     abort_download()
     global_variables.is_downloading = False
     cancel_button()
-    #global_variables.video_queue.insert(0, global_variables.current_video_data)
-    #save("video_queue", global_variables.video_queue)
     return redirect(url_for("home"))
 
 @app.route('/resume_download', methods=["GET"])
 def resume_download():
     global_variables.abort = False
-    #global_variables.video_queue.insert(0, global_variables.current_video_data)
     console("Resuming download.", "python")
     return redirect(url_for("home"))
 
@@ -247,16 +255,22 @@ def resume_download():
 def cancel_download():
     global_variables.abort = False
     global_variables.video_queue = []
-    save("video_queue", [])
+    file = read("file")
+    program_data = file["program_data"]
+    program_data["video_queue"] = []
+    file["program_data"] = program_data
+    save("whole_file", file)
     console("Aborted download", "python")
     return redirect(url_for("home"))
 
 if __name__ == '__main__':
+    check_for_update_launcher()
     result = ensure_ffmpeg()
     if result == "run":
         check_for_userdata()
         data = read("file")
-        if data["open_browser"] == "yes":
+        userdata = data["userdata"]
+        if userdata["open_browser"] == "yes":
             open_browser()
         update_yt_dlp()
         check_for_queue()
