@@ -36,3 +36,7 @@ def copy2(src, dst, *args, **kwargs):
     _check_path(src)
     _check_path(dst)
     return shutil.copy2(src, dst, *args, **kwargs)
+
+for name in dir(shutil):
+    if not globals().get(name):  # Nur übernehmen, wenn noch nicht selbst definiert
+        globals()[name] = getattr(shutil, name)

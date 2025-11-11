@@ -1,15 +1,8 @@
 from flask import Flask, request, render_template, redirect, url_for
 from flask_socketio import SocketIO
 import os
-import json
-import logging
 import argparse
-from program_files.outsourced_functions import (save, read,
-                                                check_for_userdata, ensure_ffmpeg, open_browser, convert_command_to_text,
-                                                convert_text_to_command, search_download_folder, start_download, abort_download, check_for_queue)
 import program_files.globals as global_variables
-from program_files.yt_dlp_functions import update_yt_dlp, start_get_name
-from program_files.sockets import cancel_button
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--project-dir", default=None)
@@ -17,6 +10,15 @@ args, _ = parser.parse_known_args()
 
 if args.project_dir:
     global_variables.project_dir = args.project_dir
+
+from program_files.outsourced_functions import (save, read,
+                                                check_for_userdata, ensure_ffmpeg, open_browser, convert_command_to_text,
+                                                convert_text_to_command, search_download_folder, start_download, abort_download,
+                                                check_for_queue, check_for_update_launcher)
+from program_files.yt_dlp_functions import update_yt_dlp, start_get_name
+from program_files.sockets import cancel_button
+
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Directory of this file
 userdata_file = os.path.join(BASE_DIR, "..", "userdata.json")

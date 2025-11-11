@@ -6,10 +6,10 @@ import webbrowser
 import threading
 import time
 import requests
-import program_files.safe_shutil as shutil
 import program_files.globals as global_variables
 from program_files.sockets import progress, console, update_tasks, emit_queue, update_current_video, cancel_button
-import program_files.logger as logger
+from program_files.logger import logger
+import program_files.safe_shutil as shutil
 from program_files.safe_shutil import _check_path
 
 download_process = None
@@ -39,6 +39,7 @@ def read(entry):
             return video_data
 
 def check_for_userdata():
+    print("Check for userdata.")
     userdata_file = global_variables.userdata_file
     entry = {
         "userdata": global_variables.userdata,
@@ -48,6 +49,7 @@ def check_for_userdata():
     if not os.path.exists(userdata_file):
         with open(userdata_file, "w", encoding="utf-8") as f:
             json.dump(entry, f, indent=4, ensure_ascii=False)
+        print("Created userdata")
     return
 
 def ensure_ffmpeg():
@@ -284,7 +286,7 @@ def check_for_updates(url_version, file_name, update):
             if update == "launcher":
                 version_file = file_name
             elif update == "main":
-                version_file = os.path.join("Dot_Matrix_Panel", file_name)
+                version_file = os.path.join("program_files", file_name)
             else:
                 return f"Wrong update mode set: {update}."
 
@@ -310,7 +312,7 @@ def check_for_updates(url_version, file_name, update):
 
 def get_file(url, save_path):
     file = read("file")
-    server_data = file["server_data"]
+    program_data = file["program_data"]
     response_version = requests.get(url)
     if response_version.status_code == 200:
         with open(save_path, "wb") as file:
@@ -318,7 +320,7 @@ def get_file(url, save_path):
             logger.info(f"{save_path} stored in /tmp")
             return True
     else:
-        logger.error(f"File {save_path} is unreachable on repo {server_data["update_repo"]} and branch {server_data["update_branch"]}.")
+        logger.error(f"File {save_path} is unreachable on repo {program_data["update_repo"]} and branch {program_data["update_branch"]}.")
         return False
 
 def update_launcher():
@@ -367,9 +369,9 @@ def update_launcher():
 
 def check_for_update_launcher():
     file = read("file")
-    server_data = file["server_data"]
-    branch = server_data["update_branch"]
-    repo = server_data["update_repo"]
+    program_data = file["program_data"]
+    branch = program_data["update_branch"]
+    repo = program_data["update_repo"]
     url_version = f"https://raw.githubusercontent.com/{repo}/refs/heads/{branch}/launcher_version.txt"
     file_name = "launcher_version.txt"
     update = "launcher"

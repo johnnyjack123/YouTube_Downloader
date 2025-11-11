@@ -10,7 +10,7 @@ abort_flag = False
 current_video_data = {}
 abort = False
 project_dir = ""
-userdata_file = os.path.join(project_dir, "..", "userdata.json")
+userdata_file = os.path.join(project_dir, "userdata.json")
 
 quality_map = {
     "bestvideo": "Best",

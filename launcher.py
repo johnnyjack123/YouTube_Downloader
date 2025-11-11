@@ -6,20 +6,21 @@ project_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_dir)
 
 # Path to program files directory
-dot_matrix_dir = os.path.join(project_dir, "Dot_Matrix_Panel")
-sys.path.insert(0, dot_matrix_dir)
+program_files_dir = os.path.join(project_dir, "program_files")
+sys.path.insert(0, program_files_dir)
 
 import requests
 import subprocess
 import zipfile
 import io
 
-from program_files.outsourced_functions import read, check_for_userdata, create_folders, check_for_updates
 import program_files.globals as global_variables
-import program_files.logger as logger
-import program_files.safe_shutil as shutil
-
 global_variables.project_dir = project_dir
+print(f"Project dir{project_dir}")
+
+from program_files.outsourced_functions import read, check_for_userdata, create_folders, check_for_updates
+from program_files.logger import logger
+import program_files.safe_shutil as shutil
 
 def check_internet_connection(url="https://www.google.com", timeout=5):
     try:
@@ -135,7 +136,7 @@ def launch_app():
     python_executable = sys.executable  # das ist der aktuell laufende/interaktive venv-Python
     subprocess.Popen([
         python_executable,
-        "-m", "Dot_Matrix_Panel.Dot-Matrix_Main",
+        "-m", "program_files.yt_dlp_backend",
         "--project-dir", os.path.abspath(".")
     ])
     logger.info("Exit launcher.")
@@ -166,8 +167,8 @@ def check_for_update_main():
 check_for_userdata()
 create_folders()
 data = read("file")
-
-if data["auto_update"] == "yes":
+userdata = data["userdata"]
+if userdata["auto_update"] == "yes":
     if check_internet_connection():
         check_for_update_main()
     else:
