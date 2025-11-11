@@ -5,13 +5,10 @@ import json
 import logging
 import argparse
 from program_files.outsourced_functions import (save, read,
-                                                check_for_userdata, ensure_ffmpeg, open_browser,
-                                                convert_command_to_text,
-                                                convert_text_to_command, search_download_folder, start_download,
-                                                abort_download, check_for_queue, check_for_update_launcher)
+                                                check_for_userdata, ensure_ffmpeg, open_browser, convert_command_to_text,
+                                                convert_text_to_command, search_download_folder, start_download, abort_download, check_for_queue)
 import program_files.globals as global_variables
 from program_files.yt_dlp_functions import update_yt_dlp, start_get_name
-from datetime import datetime
 from program_files.sockets import cancel_button
 
 parser = argparse.ArgumentParser()
@@ -42,10 +39,6 @@ socketio = SocketIO(app, async_mode="threading", cors_allowed_origins="*")
 import program_files.sockets as sockets
 from program_files.sockets import console, emit_queue
 sockets.init_socket(socketio)
-
-def log_event(msg: str):
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-    logging.debug(msg)
 
 @app.route('/', methods=["GET", "POST"])
 def home():
