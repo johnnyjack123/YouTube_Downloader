@@ -25,10 +25,14 @@ def update_yt_dlp():
             return
         else:
             subprocess.run([sys.executable, "-m", "pip", "install", "-U", "yt-dlp"])
-            save("yt-dlp_update_time", now.isoformat())
+            program_data["yt_dlp_update_time"] = now.isoformat()
+            file["program_data"] = program_data
+            save("whole_file", file)
     else:
         subprocess.run([sys.executable, "-m", "pip", "install", "-U", "yt-dlp"])
-        save("yt-dlp_update_time", now.isoformat())
+        program_data["yt_dlp_update_time"] = now.isoformat()
+        file["program_data"] = program_data
+        save("whole_file", file)
     return
 
 def get_name(video_url):

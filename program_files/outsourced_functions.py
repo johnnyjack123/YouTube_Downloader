@@ -93,13 +93,13 @@ def ensure_ffmpeg():
 def create_task_list(video_data, video_task, audio_task, merge_task):
     task_list = []
     file = read("file")
-    userdata = file["userdata"]
+    download_data = file["download_data"]
     if video_data["video_container"] != "mp3":
         if video_data["video_checkbox"]:
             task_list.append({"name": "Download Video", "status": video_task})
         if video_data["audio_checkbox"]:
             task_list.append({"name": "Download Audio", "status": audio_task})
-        if userdata["auto_merge"] == "yes" and video_data["video_checkbox"] and video_data["audio_checkbox"]:
+        if download_data["auto_merge"] == "yes" and video_data["video_checkbox"] and video_data["audio_checkbox"]:
             task_list.append({"name": "Merge", "status": merge_task})
     else:
         task_list.append({"name": "Download Audio", "status": audio_task})
@@ -177,7 +177,7 @@ def manage_download():
             video_json = json.dumps(video_entry)
 
             download_process = subprocess.Popen(
-                [sys.executable, "-u", "program_files/download_and_merge.py", video_json],
+                [sys.executable, "-m", "program_files.download_and_merge", video_json],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,  # Fehler landen auch im stdout
                 text=True,
@@ -264,21 +264,36 @@ def create_folders():
     tmp_launcher_folder = os.path.join("tmp", "launcher")
     if not os.path.exists(tmp_launcher_folder):
         os.makedirs(tmp_launcher_folder)
+    else:
+        shutil.rmtree(tmp_launcher_folder)
+        os.makedirs(tmp_launcher_folder)
 
     tmp_old_files = os.path.join("tmp", "old_files")
     if not os.path.exists(tmp_old_files):
+        os.makedirs(tmp_old_files)
+    else:
+        shutil.rmtree(tmp_old_files)
         os.makedirs(tmp_old_files)
 
     tmp_old_files_launcher = os.path.join("tmp", "old_files", "launcher")
     if not os.path.exists(tmp_old_files_launcher):
         os.makedirs(tmp_old_files_launcher)
+    else:
+        shutil.rmtree(tmp_old_files_launcher)
+        os.makedirs(tmp_old_files_launcher)
 
     tmp_old_files_main = os.path.join("tmp", "old_files", "main")
     if not os.path.exists(tmp_old_files_main):
         os.makedirs(tmp_old_files_main)
+    else:
+        shutil.rmtree(tmp_old_files_main)
+        os.makedirs(tmp_old_files_main)
 
     va = os.path.join("tmp", "va")
     if not os.path.exists(va):
+        os.makedirs(va)
+    else:
+        shutil.rmtree(va)
         os.makedirs(va)
     return
 

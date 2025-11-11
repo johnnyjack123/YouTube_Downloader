@@ -92,6 +92,7 @@ def video_settings():
     audio_checkbox = request.form.get("audio_checkbox")
     file = read("file")
     download_data = file["download_data"]
+    program_data = file["program_data"]
     if custom_resolution == "yes":
         video_resolution = request.form.get("video_resolution")
         if not video_resolution:
@@ -125,7 +126,6 @@ def video_settings():
     download_data["video_container"] = video_container
     video_url = request.form.get("video_url")
     file["download_data"] = download_data
-    save("whole_file", file)
     found = next((v for v in global_variables.video_queue if v["video_url"] == video_url), None)
 
     if found:
@@ -143,7 +143,10 @@ def video_settings():
             "audio_checkbox": audio_checkbox,
         }
         global_variables.video_queue.append(entry)
-        save("video_queue", global_variables.video_queue)
+        program_data["video_queue"] = global_variables.video_queue
+        file["program_data"] = program_data
+        save("whole_file", file)
+
         start_get_name(video_url)
         emit_queue()
     return redirect(url_for("home"))

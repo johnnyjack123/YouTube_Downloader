@@ -168,7 +168,8 @@ def merging_video_audio(video_file, audio_file, output_file):
     audio_option = "copy" if audio_codec.lower() == "aac" else "aac"
 
     file = read("file")
-    if file["force_h264"]:
+    userdata = file["userdata"]
+    if userdata["force_h264"]:
         is_mp4_container = video_file.lower().endswith(".mp4")
 
         if is_mp4_container and video_codec.lower() == "h264":
