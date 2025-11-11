@@ -13,14 +13,27 @@ def _check_path(path):
         raise PermissionError(f"Access denied: {path} is outside project directory.")
     return path
 
+def _check_path_exception(path):
+    user_home = Path.home()
+    path = Path(path).resolve()
+
+    is_in_home = user_home in path.parents
+    if not is_in_home:
+        raise PermissionError(f"Access denied: {path} is outside of user folder.")
+    return path
+
 def copytree(src, dst, *args, **kwargs):
     _check_path(src)
     _check_path(dst)
     return shutil.copytree(src, dst, *args, **kwargs)
 
-def move(src, dst, *args, **kwargs):
-    _check_path(src)
-    _check_path(dst)
+def move(src, dst, exception, *args, **kwargs):
+    if exception:
+        _check_path_exception(src)
+        _check_path_exception(dst)
+    else:
+        _check_path(src)
+        _check_path(dst)
     return shutil.move(src, dst, *args, **kwargs)
 
 def rmtree(path, *args, **kwargs):

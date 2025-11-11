@@ -1,10 +1,11 @@
+import shutil
+
 import yt_dlp
 import os
-import logging
 import subprocess
 import sys
 import json
-
+from program_files.logger import logger
 state_logger_download = False
 state_logger_prepare = True
 download_type = ""
@@ -336,9 +337,6 @@ def download():
 
         send_status("task_list", [current_video, video_task, audio_task, merge_task])
 
-        logging.basicConfig(filename="../debug.log", level=logging.DEBUG)
-        logging.debug(current_video)
-
         video_url = current_video["video_url"]
         video_resolution = current_video["video_resolution"]
         video_container = current_video["video_container"]
@@ -349,12 +347,23 @@ def download():
         audio_checkbox = current_video["audio_checkbox"]
         filename_addition = ""
 
+        file = read("file")
+        program_data = file["program_data"]
+        download_data = file["download_data"]
+        download_folder = program_data["download_folder"]
+        merge = download_data["auto_merge"]
+
         if video_url:
             send_status("progress", ["preparing", 0, 0, 0])
 
-            download_folder = read("download_folder")
-            if not os.path.exists(download_folder):
-                return "Not valid folder"
+            if merge == "yes":
+                download_tmp_folder = os.path.join("tmp", "va")
+            else:
+                download_tmp_folder = download_folder
+            logger.info(f"Download folder: {download_tmp_folder}")
+            if not os.path.exists(download_tmp_folder):
+                logger.info("va folder doesn't exists")
+                return "va folder doesn't exists"
 
             if custom_resolution == "yes":
                 filename_addition = video_resolution
@@ -393,8 +402,7 @@ def download():
                     send_status("download_type", download_type)
                     send_status("console", [f"Preparing to download {download_type}.", source])
 
-                    video_file = download_video(video_input, download_folder, video_url)
-
+                    video_file = download_video(video_input, download_tmp_folder, video_url)
                     send_status("state_logger", True) # So that logger knows, when new video starts, helps to display "Download" only once per video
                     state_logger_download = True
                     state_logger_prepare = True
@@ -410,7 +418,7 @@ def download():
                     send_status("download_type", download_type)
                     send_status("console", [f"Preparing to download {download_type}.", source])
 
-                    audio_file = download_audio(audio_input, download_folder, video_url)
+                    audio_file = download_audio(audio_input, download_tmp_folder, video_url)
 
                     send_status("state_logger",True)  # So that logger knows, when new video starts, helps to display "Download" only once per video
                     state_logger_download = True
@@ -419,27 +427,31 @@ def download():
                     audio_task = "done"
                     send_status("task_list", [current_video, video_task, audio_task, merge_task])
 
-                file_data = read("file")
+                #file_data = read("file")
                 state_logger_download = False
                 state_logger_prepare = False
-                merge = file_data["auto_merge"]
                 if video_checkbox and audio_checkbox and merge:
                     merge_task = "working"
                     send_status("task_list", [current_video, video_task, audio_task, merge_task])
 
                     send_status("console", ["Merging video and audio stream.", source])
-                    output_file = video_file + "_" + filename_addition + "_merged." + video_container
+                    logger.info("Merging video and audio stream.")
+                    output_file = os.path.join(download_folder, os.path.basename(video_file) + "_" + filename_addition + "." + video_container) # Absolute path to download folder
                     result = merging_video_audio(video_file, audio_file, output_file)
                     if result:
                         send_status("console", ["Merging successful.", source])
+                        logger.info("Merging successful.")
                         merge_task = "done"
                         send_status("task_list", [current_video, video_task, audio_task, merge_task])
-                        os.remove(video_file)
-                        os.remove(audio_file)
+                        shutil.rmtree(download_tmp_folder) # Remove old video and audio file after successful merge
+                        os.makedirs(download_tmp_folder) # Create the tmp folder again for the next download
                     else:
                         print("Merging failed. Downloaded video and audio are still storaged in your download folder.")
                         send_status("console", ["Merging failed. Downloaded video and audio are still storaged in your download folder.", source])
-
+                        logger.error("Merging failed. Downloaded video and audio are still storaged in your download folder.")
+                        exception = True
+                        shutil.move(video_file, download_folder, exception)
+                        shutil.move(audio_file, download_folder, exception)
                 elif not video_checkbox and audio_checkbox and video_container == "mp3": # Exception for mp3 Format, so you can download for example music as a mp3 file
                     merge_task = "working"
                     send_status("task_list", [current_video, video_task, audio_task, merge_task])

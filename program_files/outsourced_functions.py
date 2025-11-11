@@ -276,6 +276,10 @@ def create_folders():
     tmp_old_files_main = os.path.join("tmp", "old_files", "main")
     if not os.path.exists(tmp_old_files_main):
         os.makedirs(tmp_old_files_main)
+
+    va = os.path.join("tmp", "va")
+    if not os.path.exists(va):
+        os.makedirs(va)
     return
 
 def check_for_updates(url_version, file_name, update):
