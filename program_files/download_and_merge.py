@@ -85,11 +85,9 @@ def get_frame_count_estimate(video_file):
     # --- Wenn gar nichts geht ---
     return 0
 
-
-
 def send_status(function_name, function_args):
     cmd = json.dumps({"function": function_name, "args": function_args})
-    print(cmd)
+    print(cmd, flush=True)
     return
 
 def progress_hook(d):
