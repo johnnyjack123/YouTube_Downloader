@@ -72,17 +72,17 @@ def update_launcher():
 
     try:
         shutil.move("launcher.py", launcher_py_old_path, False)
-        shutil.move("launcher.bat", launcher_bat_old_path, False)
+        shutil.move(batch_file_name, launcher_bat_old_path, False)
     except PermissionError as e:
         logger.error(f"Unable to move old launcher files: {e}")
 
     try:
         shutil.move(launcher_py_path, "launcher.py", False)
-        shutil.move(launcher_bat_path, "launcher.bat", False)
+        shutil.move(launcher_bat_path, batch_file_name, False)
     except PermissionError as e:
         logger.error(f"Permission error: {e}")
         shutil.move(launcher_py_old_path, "launcher.py", False)
-        shutil.move(launcher_bat_old_path, "launcher.bat", False)
+        shutil.move(launcher_bat_old_path, batch_file_name, False)
 
 
     logger.info("Launcher successfully updated.")
