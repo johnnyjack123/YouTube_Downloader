@@ -59,9 +59,9 @@ def update_launcher():
     url_launcher_bat = f"https://raw.githubusercontent.com/{repo}/refs/heads/{branch}/launcher.bat"
     tmp_launcher_folder = os.path.join("tmp", "launcher")
     launcher_py_path = os.path.join(tmp_launcher_folder, "launcher.py")
-    launcher_bat_path = os.path.join(tmp_launcher_folder, "launcher.bat")
+    launcher_bat_path = os.path.join(tmp_launcher_folder, "windows_launcher.bat")
     launcher_py_old_path = os.path.join("tmp", "old_files", "launcher", "launcher.py")
-    launcher_bat_old_path = os.path.join("tmp", "old_files", "launcher", "launcher.bat")
+    launcher_bat_old_path = os.path.join("tmp", "old_files", "launcher", "windows_launcher.bat")
     result = get_file(url_launcher_py, launcher_py_path)
     if not result:
         return False

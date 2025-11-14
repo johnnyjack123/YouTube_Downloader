@@ -1,6 +1,6 @@
 import logging
 
-debug_log_file = "debug.log" #TODO: Pfad überprüfen
+debug_log_file = "debug.log"
 
 # Eigenen Logger erstellen
 logger = logging.getLogger("debug_logger")
@@ -11,7 +11,7 @@ file_handler = logging.FileHandler(debug_log_file)
 file_handler.setLevel(logging.INFO)
 
 # Format für Logs definieren
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s", "%Y-%m-%d %H:%M:%S")
+formatter = logging.Formatter("%(asctime)s - %(levelname)s -  %(filename)s:%(lineno)d - %(message)s", "%Y-%m-%d %H:%M:%S")
 file_handler.setFormatter(formatter)
 
 # Handler dem Logger hinzufügen
