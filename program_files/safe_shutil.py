@@ -27,7 +27,7 @@ def copytree(src, dst, *args, **kwargs):
     _check_path(dst)
     return shutil.copytree(src, dst, *args, **kwargs)
 
-def move(src, dst, exception, *args, **kwargs):
+def move(src, dst, exception=False, *args, **kwargs):
     if exception:
         _check_path_exception(src)
         _check_path_exception(dst)
