@@ -11,6 +11,7 @@ current_video_data = {}
 abort = False
 project_dir = ""
 userdata_file = os.path.join(project_dir, "userdata.json")
+operating_system = ""
 
 quality_map = {
     "bestvideo": "Best",

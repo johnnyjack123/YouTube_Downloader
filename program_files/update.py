@@ -4,6 +4,7 @@ from program_files.logger import logger
 from program_files.outsourced_functions import read
 import program_files.safe_shutil as shutil
 from program_files.safe_shutil import _check_path
+import program_files.globals as global_variables
 
 def check_for_updates(url_version, file_name, update):
     new_version_file = os.path.join("tmp", file_name)
@@ -55,37 +56,46 @@ def update_launcher():
     program_data = file["program_data"]
     branch = program_data["update_branch"]
     repo = program_data["update_repo"]
-    batch_file_name = "windows_launcher.bat"
+    if global_variables.operating_system == "win32":
+        shell_file_name = "windows_launcher.bat"
+    else:
+        shell_file_name = "mac_os_or_linux_launcher.sh"
     url_launcher_py = f"https://raw.githubusercontent.com/{repo}/refs/heads/{branch}/launcher.py"
-    url_launcher_bat = f"https://raw.githubusercontent.com/{repo}/refs/heads/{branch}/{batch_file_name}"
+    url_launcher_bat = f"https://raw.githubusercontent.com/{repo}/refs/heads/{branch}/{shell_file_name}"
     tmp_launcher_folder = os.path.join("tmp", "launcher")
     launcher_py_path = os.path.join(tmp_launcher_folder, "launcher.py")
-    launcher_bat_path = os.path.join(tmp_launcher_folder, batch_file_name)
+
+
+    launcher_shell_path = os.path.join(tmp_launcher_folder, shell_file_name)
     launcher_py_old_path = os.path.join("tmp", "old_files", "launcher", "launcher.py")
-    launcher_bat_old_path = os.path.join("tmp", "old_files", "launcher", batch_file_name)
+    launcher_bat_old_path = os.path.join("tmp", "old_files", "launcher", shell_file_name)
     result = get_file(url_launcher_py, launcher_py_path)
     if not result:
-        return False
-    result = get_file(url_launcher_bat, launcher_bat_path)
+        logger.error("Update of launcher aborted due to an error in getting the launcher.py file from GitHub")
+        print("Update of launcher aborted due to an error in getting the launcher.py file from GitHub")
+        return
+    result = get_file(url_launcher_bat, launcher_shell_path)
     if not result:
-        return False
+        logger.error("Update of launcher aborted due to an error in getting the  file from GitHub")
+        return
 
     try:
         shutil.move("launcher.py", launcher_py_old_path, False)
-        shutil.move(batch_file_name, launcher_bat_old_path, False)
+        shutil.move(shell_file_name, launcher_bat_old_path, False)
     except PermissionError as e:
         logger.error(f"Unable to move old launcher files: {e}")
 
     try:
         shutil.move(launcher_py_path, "launcher.py", False)
-        shutil.move(launcher_bat_path, batch_file_name, False)
+        shutil.move(launcher_shell_path, shell_file_name, False)
     except PermissionError as e:
         logger.error(f"Permission error: {e}")
         shutil.move(launcher_py_old_path, "launcher.py", False)
-        shutil.move(launcher_bat_old_path, batch_file_name, False)
+        shutil.move(launcher_bat_old_path, shell_file_name, False)
 
 
     logger.info("Launcher successfully updated.")
+    print("Launcher successfully updated.")
     new_launcher_version_path = os.path.join("tmp", "launcher_version.txt")
     for path in [launcher_py_old_path, launcher_bat_old_path, "launcher_version.txt"]:
         _check_path(path)

@@ -14,7 +14,7 @@ if args.project_dir:
 from program_files.outsourced_functions import (save, read,
                                                 check_for_userdata, ensure_ffmpeg, open_browser, convert_command_to_text,
                                                 convert_text_to_command, search_download_folder, start_download, abort_download,
-                                                check_for_queue)
+                                                check_for_queue, get_os)
 from program_files.update import check_for_update_launcher
 from program_files.yt_dlp_functions import update_yt_dlp, start_get_name
 from program_files.sockets import cancel_button
@@ -263,6 +263,7 @@ def cancel_download():
     return redirect(url_for("home"))
 
 if __name__ == '__main__':
+    get_os()
     check_for_update_launcher()
     result = ensure_ffmpeg()
     if result == "run":

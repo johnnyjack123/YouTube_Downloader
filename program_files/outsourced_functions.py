@@ -52,6 +52,14 @@ def check_for_userdata():
         print("Created userdata")
     return
 
+def get_os():
+    if global_variables.operating_system == "":
+        operating_system = sys.platform
+        global_variables.operating_system = operating_system
+        return
+    else:
+        return
+
 def ensure_ffmpeg():
     if shutil.which("ffmpeg") is not None:
         return "run"
@@ -60,21 +68,22 @@ def ensure_ffmpeg():
         install = input("Do you wanna install ffmpeg now? Type [yes] or [no]. You also can manually download ffmpeg from the official ffmpeg website: https://ffmpeg.org/download.html . You are not able to use this tool without ffmpeg installed.")
         if install == "yes":
                 try:
-                    if sys.platform == "win32":
+                    get_os()
+                    if global_variables.operating_system == "win32":
                         subprocess.run(
                             ["winget", "install", "-e", "--id", "Gyan.FFmpeg"],
                             check=True
                         )
                         print("ffmpeg successfully installed.")
                         return "restart"
-                    elif sys.platform == "linux":
+                    elif global_variables.operating_system == "linux":
                         subprocess.run(
                             ["sudo", "apt", "install", "-y", "ffmpeg"],
                             check=True
                         )
                         print("ffmpeg successfully installed.")
                         return "restart"
-                    elif sys.platform == "darwin":
+                    elif global_variables.operating_system == "darwin":
                         subprocess.run(
                             ["brew", "install", "ffmpeg"],
                             check=True
