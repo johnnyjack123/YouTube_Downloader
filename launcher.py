@@ -45,7 +45,7 @@ def safe_replace_folder(source_folder, target_folder):
     try:
         # 1️⃣ Neue Version in temporären Ordner kopieren
         shutil.copytree(source_folder, new_folder)
-        logger.info("Copied new version to temp folder.")
+        logger.info("Copied new version to tmp folder.")
 
         # 3️⃣ Alte Version sichern
         if os.path.exists(target_folder):
@@ -75,7 +75,8 @@ def safe_replace_folder(source_folder, target_folder):
         return False
 
 def update():
-    print("Updating...")
+    print("Updating main program...")
+    logger.info("Updating main program...")
     file = read("file")
 
     program_data = file["program_data"]
@@ -87,17 +88,18 @@ def update():
 
     # 1. ZIP vom GitHub-Branch herunterladen
     zip_url = f"https://github.com/{repo}/archive/refs/heads/{branch}.zip"
-    print(f"🔄 Load ZIP from: {zip_url}")
+    print(f"Load ZIP from: {zip_url}")
     response = requests.get(zip_url)
 
     if response.status_code != 200:
-        print(f"❌ Download error: {response.status_code}")
+        print(f"Download error: {response.status_code}")
+        logger.error(f"Download error: {response.status_code}")
         return
 
     # 2. ZIP im Arbeitsspeicher entpacken
     with zipfile.ZipFile(io.BytesIO(response.content)) as zip_ref:
         extracted_dirname = zip_ref.namelist()[0].split("/")[0]  # z.B. "dot-matrix-info-display-Thread-Monitoring"
-        print(f"📁 ZIP contents root directory: {extracted_dirname}")
+        print(f"ZIP contents root directory: {extracted_dirname}")
 
         # 3. Temporär entpacken
         tmp_dir = "_tmp_update_dir"
@@ -111,7 +113,8 @@ def update():
     source_folder = os.path.join(tmp_dir, extracted_dirname, folder_to_extract)
 
     if not os.path.exists(source_folder):
-        print(f"❌ Folder '{folder_to_extract}' not found in ZIP!")
+        print(f"Folder '{folder_to_extract}' not found in ZIP!")
+        logger.error(f"Folder '{folder_to_extract}' not found in ZIP!")
         return
 
     if os.path.exists(target_folder):
@@ -134,7 +137,7 @@ def launch_app():
         "-m", "program_files.yt_dlp_backend",
         "--project-dir", os.path.abspath(".")
     ])
-    logger.info("Exit launcher.")
+    logger.info("Start main program, exit launcher.")
     sys.exit()
 
 def check_for_update_main():
@@ -143,8 +146,6 @@ def check_for_update_main():
     repo = program_data["update_repo"]
     branch = program_data["update_branch"]
     url_version = f"https://raw.githubusercontent.com/{repo}/refs/heads/{branch}/program_files/version.txt"
-    #new_version = os.path.join(global_variables.project_dir, "tmp", "newest_version.txt")
-    #old_version = os.path.join(global_variables.project_dir, "program_files", "version.txt")
     file_name = "version.txt"
     update_mode = "main"
     result = check_for_updates(url_version, file_name, update_mode)

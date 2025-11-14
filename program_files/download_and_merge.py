@@ -147,7 +147,7 @@ class Logger:
 def merging_video_audio(video_file, audio_file, output_file):
     source = "python"
     send_status("console", ["Initiating merging of video and audio stream...", source])
-
+    logger.info("Initiating merging of video and audio stream...")
     # --- Audio codec check ---
     result = subprocess.run([
         "ffprobe", "-v", "error",
@@ -199,12 +199,9 @@ def merging_video_audio(video_file, audio_file, output_file):
             send_status("console", [f"Audio codec {audio_codec} not supported in MOV, re-encoding to AAC", source])
             audio_option = "aac"
 
-
-
     total_frames = get_frame_count_estimate(video_file)
-    print(f"DEBUG: total_frames={total_frames!r}")
-    send_status("console", [f"Total frames: {total_frames}.", source])
-
+    #send_status("console", [f"Total frames: {total_frames}.", source])
+    logger.info(f"Total frames: {total_frames}")
     try:
         total_frames = int(total_frames)
     except (ValueError, TypeError):
@@ -250,11 +247,10 @@ def merging_video_audio(video_file, audio_file, output_file):
         send_status("console", ["Merging successful", "ffmpeg"])
         return True
 
-
 def convert_audio_to_mp3(input_file, output_file):
     source = "python"
     send_status("console", ["Converting audio to MP3...", source])
-
+    logger.info("Convert audio to mp3.")
     # --- Check codec ---
     result = subprocess.run([
         "ffprobe", "-v", "error",
@@ -336,6 +332,7 @@ def download():
     global state_logger_download, download_type, state_logger_prepare
     source = "python"
     send_status("console", ["Preparing download.", source])
+    logger.info("Preparing download.")
     try:
         video_json = sys.argv[1]
         current_video = json.loads(video_json)
@@ -492,9 +489,11 @@ def download():
                         os.rename(video_file, new_name)
                         shutil.move(new_name, output_file, True)
                 send_status("progress", ["finished", False, False, False])
+                logger.info("Successfully downloaded video.")
 
             except Exception as e:
                 print("Download failed:", e)
+                logger.error(f"Download failed: {e}")
     finally:
         download_thread = False
 
