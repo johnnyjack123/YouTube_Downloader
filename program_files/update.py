@@ -55,13 +55,14 @@ def update_launcher():
     program_data = file["program_data"]
     branch = program_data["update_branch"]
     repo = program_data["update_repo"]
+    batch_file_name = "windows_launcher.bat"
     url_launcher_py = f"https://raw.githubusercontent.com/{repo}/refs/heads/{branch}/launcher.py"
-    url_launcher_bat = f"https://raw.githubusercontent.com/{repo}/refs/heads/{branch}/launcher.bat"
+    url_launcher_bat = f"https://raw.githubusercontent.com/{repo}/refs/heads/{branch}/{batch_file_name}"
     tmp_launcher_folder = os.path.join("tmp", "launcher")
     launcher_py_path = os.path.join(tmp_launcher_folder, "launcher.py")
-    launcher_bat_path = os.path.join(tmp_launcher_folder, "windows_launcher.bat")
+    launcher_bat_path = os.path.join(tmp_launcher_folder, batch_file_name)
     launcher_py_old_path = os.path.join("tmp", "old_files", "launcher", "launcher.py")
-    launcher_bat_old_path = os.path.join("tmp", "old_files", "launcher", "windows_launcher.bat")
+    launcher_bat_old_path = os.path.join("tmp", "old_files", "launcher", batch_file_name)
     result = get_file(url_launcher_py, launcher_py_path)
     if not result:
         return False
