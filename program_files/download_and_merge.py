@@ -1,11 +1,20 @@
-import shutil
-
 import yt_dlp
 import os
 import subprocess
 import sys
 import json
+import argparse
+import program_files.globals as global_variables
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--project-dir", default=None)
+args, _ = parser.parse_known_args()
+
+if args.project_dir:
+    global_variables.project_dir = args.project_dir
+
 from program_files.logger import logger
+import program_files.safe_shutil as shutil
 state_logger_download = False
 state_logger_prepare = True
 download_type = ""
@@ -207,7 +216,8 @@ def merging_video_audio(video_file, audio_file, output_file):
         "-i", audio_file,
         "-c:v", video_option,
         "-c:a", audio_option,
-        "-progress", "pipe:1",  # ← FFmpeg writes progress to stdout
+        "-movflags", "faststart",
+        "-progress", "pipe:1",  # FFmpeg writes progress to stdout
         "-nostats",  # supress logs in console
         output_file
     ]
@@ -295,7 +305,7 @@ def convert_audio_to_mp3(input_file, output_file):
 def download_video(video_input, download_folder, video_url):
     ydl_opts_video = {
         'format': video_input,
-        'outtmpl': os.path.join(download_folder, '%(title)s_video'),
+        'outtmpl': os.path.join(download_folder, '%(title)s_video.%(ext)s'),
         'progress_hooks': [progress_hook],
         'no_color': True, # Suppresses coloured output, as otherwise the numbers cannot be displayed correctly in the browser
         'restrictfilenames': True,
@@ -310,7 +320,7 @@ def download_video(video_input, download_folder, video_url):
 def download_audio(audio_input, download_folder, video_url):
     ydl_opts_audio = {
         'format': audio_input,
-        'outtmpl': os.path.join(download_folder, '%(title)s_audio'),
+        'outtmpl': os.path.join(download_folder, '%(title)s_audio.%(ext)s'),
         'progress_hooks': [progress_hook],
         'no_color': True, # Suppresses coloured output, as otherwise the numbers cannot be displayed correctly in the browser
         'restrictfilenames': True,
@@ -429,13 +439,13 @@ def download():
                 #file_data = read("file")
                 state_logger_download = False
                 state_logger_prepare = False
-                if video_checkbox and audio_checkbox and merge:
+                if video_checkbox and audio_checkbox and merge == "yes":
                     merge_task = "working"
                     send_status("task_list", [current_video, video_task, audio_task, merge_task])
 
                     send_status("console", ["Merging video and audio stream.", source])
                     logger.info("Merging video and audio stream.")
-                    output_file = os.path.join(download_folder, os.path.basename(video_file) + "_" + filename_addition + "." + video_container) # Absolute path to download folder
+                    output_file = os.path.join(download_folder, os.path.splitext(os.path.basename(video_file))[0] + "_" + filename_addition + "." + video_container) # Absolute path to download folder
                     result = merging_video_audio(video_file, audio_file, output_file)
                     if result:
                         send_status("console", ["Merging successful.", source])
@@ -466,6 +476,21 @@ def download():
                         os.remove(audio_file)
                     else:
                         send_status("console",["Converting failed. Downloaded audio is still storaged in your download folder.", source])
+                elif not video_container == "mp3" and not merge == "yes" or not video_checkbox and audio_checkbox or video_checkbox and not audio_checkbox: # Exception for non merged videostreams/audiostreams to move from tmp in choosen download folder
+                    if video_checkbox:
+                        file_name, video_container = os.path.splitext(os.path.basename(video_file))
+                        output_file = os.path.join(download_folder, file_name + "_" + filename_addition + video_container)
+                        folder = os.path.dirname(video_file)
+                        new_name = os.path.join(folder, file_name + "_" + filename_addition + video_container)
+                        os.rename(video_file, new_name)
+                        shutil.move(new_name, output_file, True)
+                    if audio_checkbox:
+                        file_name, audio_container = os.path.splitext(os.path.basename(audio_file))
+                        output_file = os.path.join(download_folder, file_name + "_" + filename_addition + audio_container)
+                        folder = os.path.dirname(audio_file)
+                        new_name = os.path.join(folder, file_name + "_" + filename_addition + audio_container)
+                        os.rename(video_file, new_name)
+                        shutil.move(new_name, output_file, True)
                 send_status("progress", ["finished", False, False, False])
 
             except Exception as e:

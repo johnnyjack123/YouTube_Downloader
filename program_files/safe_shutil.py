@@ -3,7 +3,7 @@ import shutil
 import program_files.globals as global_variables
 
 project_dir = Path(global_variables.project_dir).resolve()
-
+print(f"PRoject dir shutil: {project_dir}, globals: {global_variables.project_dir}")
 if not getattr(global_variables, "project_dir", None):
     raise RuntimeError("Project directory not set in global_variables.project_dir")
 

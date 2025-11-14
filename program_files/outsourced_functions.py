@@ -177,7 +177,7 @@ def manage_download():
             video_json = json.dumps(video_entry)
 
             download_process = subprocess.Popen(
-                [sys.executable, "-m", "program_files.download_and_merge", video_json],
+                [sys.executable, "-m", "program_files.download_and_merge", video_json, "--project-dir", os.path.abspath(".")],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,  # Fehler landen auch im stdout
                 text=True,

@@ -16,7 +16,7 @@ import io
 
 import program_files.globals as global_variables
 global_variables.project_dir = project_dir
-print(f"Project dir{project_dir}")
+print(f"Project dir: {project_dir}")
 
 from program_files.outsourced_functions import read, check_for_userdata, create_folders, check_for_updates
 from program_files.logger import logger
