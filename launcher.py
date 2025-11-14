@@ -47,12 +47,6 @@ def safe_replace_folder(source_folder, target_folder):
         shutil.copytree(source_folder, new_folder)
         logger.info("Copied new version to temp folder.")
 
-        # 2️⃣ Teste, ob wichtige Dateien vorhanden sind
-        must_have = ["version.txt", "Dot-Matrix_Main.py"]
-        for f in must_have:
-            if not os.path.exists(os.path.join(new_folder, f)):
-                raise FileNotFoundError(f"Required file missing: {f}")
-
         # 3️⃣ Alte Version sichern
         if os.path.exists(target_folder):
             try:
