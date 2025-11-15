@@ -11,3 +11,5 @@
 /yt-dlp_backend.spec
 program_files/__pycache__/
 tmp/
+/venv/
+/_tmp_update_dir/

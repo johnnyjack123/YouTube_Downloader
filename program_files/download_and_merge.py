@@ -382,13 +382,21 @@ def move_video_file(video_file, download_folder, filename_addition):
     os.rename(video_file, new_name)
     shutil.move(new_name, output_file, True)
 
-def move_audio_file(video_file, audio_file, download_folder, filename_addition):
-    file_name, audio_container = os.path.splitext(os.path.basename(audio_file))
-    output_file = os.path.join(download_folder, file_name + "_" + filename_addition + audio_container)
-    folder = os.path.dirname(audio_file)
-    new_name = os.path.join(folder, file_name + "_" + filename_addition + audio_container)
-    os.rename(video_file, new_name)
-    shutil.move(new_name, output_file, True)
+def move_audio_file(audio_file, download_folder, filename_addition, video_file = ""):
+    if video_file:
+        file_name, audio_container = os.path.splitext(os.path.basename(audio_file))
+        output_file = os.path.join(download_folder, file_name + "_" + filename_addition + audio_container)
+        folder = os.path.dirname(audio_file)
+        new_name = os.path.join(folder, file_name + "_" + filename_addition + audio_container)
+        os.rename(video_file, new_name)
+        shutil.move(new_name, output_file, True)
+    else:
+        file_name, audio_container = os.path.splitext(os.path.basename(audio_file))
+        output_file = os.path.join(download_folder, file_name + audio_container)
+        folder = os.path.dirname(audio_file)
+        new_name = os.path.join(folder, file_name + audio_container)
+        os.rename(audio_file, new_name)
+        shutil.move(new_name, output_file, True)
 
 def download():
     global state_logger_download, download_type, state_logger_prepare
@@ -513,20 +521,26 @@ def download():
                     else:
                         send_status("console",["Converting failed. Downloaded audio is still storaged in your download folder.", source])
                 elif not video_container == "mp3": # Exception for non merged videostreams/audiostreams to move from tmp in chosen download folder
-                    if not merge == "yes" and (video_checkbox and video_input) and (audio_checkbox and audio_input):
+                    if not merge == "yes" and (video_checkbox and video_input) and (audio_checkbox and audio_input): # No merge, but video and audio
+                        logger.info("1")
                         move_video_file(video_file, download_folder, filename_addition)
-                        move_audio_file(video_file, audio_file, download_folder, filename_addition)
-                    elif not merge == "yes" and (video_checkbox and video_input) and (
-                            audio_checkbox and not audio_input):
+                        move_audio_file(audio_file, download_folder, filename_addition, video_file)
+                    elif (video_checkbox and video_input) and (audio_checkbox and not audio_input): # Merge, but video and audio already merged
+                        logger.info("2")
                         move_video_file(video_file, download_folder, filename_addition)
-                    elif merge == "yes" and (video_checkbox and video_input) or (audio_checkbox and audio_input):
+                    elif (video_checkbox and video_input) or (audio_checkbox and audio_input): # Merge, but either video or audio
+                        logger.info("3")
                         if video_checkbox:
+                            logger.info("3.1")
                             move_video_file(video_file, download_folder, filename_addition)
                         elif audio_checkbox:
-                            move_audio_file(video_file, audio_file, download_folder, filename_addition)
-                    elif merge == "yes" and (video_checkbox and video_input) and (
-                            audio_checkbox and not audio_input):
-                        move_video_file(video_file, download_folder, filename_addition)
+                            logger.info("3.2")
+                            move_audio_file(audio_file, download_folder, filename_addition)
+                    #elif (video_checkbox and video_input) and (audio_checkbox and not audio_input): # Merge, but only video and not audio
+                    #    move_video_file(video_file, download_folder, filename_addition)
+                    #elif (not video_checkbox and not video_input) and (audio_checkbox and audio_input): # Merge, but only audio and not video
+                    #    logger.info(f"audio_file: {audio_file}")
+                    #    move_video_file(audio_file, download_folder, filename_addition)
                 send_status("progress", ["finished", False, False, False])
                 logger.info("Successfully downloaded video.")
                 send_status("console", [f"Successfully downloaded video. Your video is now stored in {download_folder}.", source])
