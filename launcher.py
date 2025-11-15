@@ -1,5 +1,6 @@
 import sys
 import os
+from datetime import datetime
 
 # Path to project directory
 project_dir = os.path.dirname(os.path.abspath(__file__))
@@ -20,6 +21,7 @@ print(f"Project dir: {project_dir}")
 
 from program_files.outsourced_functions import read, check_for_userdata, create_folders
 from program_files.update import check_for_updates
+from program_files.logger import logger, log_message
 from program_files.logger import logger
 import program_files.safe_shutil as shutil
 
@@ -159,6 +161,10 @@ def check_for_update_main():
         launch_app()
     else:
         logger.error(f"Error in update process: {result}")
+
+log_message("\n", raw=True)
+log_message("\n", raw=True)
+log_message(f"---------- Start program at {datetime.now()} ----------", raw=True)
 
 check_for_userdata()
 create_folders()

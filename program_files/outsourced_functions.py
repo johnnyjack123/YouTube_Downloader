@@ -99,20 +99,22 @@ def ensure_ffmpeg():
         else:
             return False
 
-def create_task_list(video_data, video_task, audio_task, merge_task):
+def create_task_list(video_entry, video_task, audio_task, merge_task):
+    print(f"Video task: {video_task}, video_entry: {video_entry}, audio_task: {audio_task}, merge_task: {merge_task}")
     task_list = []
     file = read("file")
     download_data = file["download_data"]
-    if video_data["video_container"] != "mp3":
-        if video_data["video_checkbox"]:
+    if video_entry["video_container"] != "mp3":
+        if video_entry["video_checkbox"]:
             task_list.append({"name": "Download Video", "status": video_task})
-        if video_data["audio_checkbox"]:
+        if video_entry["audio_checkbox"] and not video_entry["video_quality"] == "best":
             task_list.append({"name": "Download Audio", "status": audio_task})
-        if download_data["auto_merge"] == "yes" and video_data["video_checkbox"] and video_data["audio_checkbox"]:
+        if download_data["auto_merge"] == "yes" and video_entry["video_checkbox"] and video_entry["audio_checkbox"] and not video_entry["video_quality"] == "best":
             task_list.append({"name": "Merge", "status": merge_task})
     else:
         task_list.append({"name": "Download Audio", "status": audio_task})
         task_list.append({"name": "Re-encode audio to mp3", "status": merge_task})
+    print(f"TAsk_list: {task_list}")
     return task_list
 
 def open_browser():
@@ -200,7 +202,7 @@ def manage_download():
                 try:
                     data = json.loads(line)
                     if data["function"] == "task_list":
-                        global_variables.task_list = create_task_list(data["args"][0], data["args"][1], data["args"][2], data["args"][3])
+                        global_variables.task_list = create_task_list(video_entry, data["args"][0], data["args"][1], data["args"][2])
                         update_tasks()
                     elif data["function"] == "progress":
                         progress(data["args"][0], data["args"][1], data["args"][2], data["args"][3])
