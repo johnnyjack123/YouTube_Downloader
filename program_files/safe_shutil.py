@@ -2,6 +2,7 @@ from pathlib import Path
 import shutil
 import program_files.globals as global_variables
 from program_files.logger import logger
+import os
 
 project_dir = Path(global_variables.project_dir).resolve()
 if not getattr(global_variables, "project_dir", None):
@@ -56,6 +57,17 @@ def copy2(src, dst, *args, **kwargs):
     _check_path(src)
     _check_path(dst)
     return shutil.copy2(src, dst, *args, **kwargs)
+
+def remove(path):
+    _check_path(path)
+    logger.info(f"Remove file {path}")
+    os.remove(path)
+
+def rename(src, dst):
+    _check_path(src)
+    _check_path(dst)
+    logger.info(f"Rename file from {src} to {dst}")
+    os.rename(src, dst)
 
 for name in dir(shutil):
     if not globals().get(name):  # Nur übernehmen, wenn noch nicht selbst definiert

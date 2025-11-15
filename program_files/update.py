@@ -76,7 +76,7 @@ def update_launcher():
         return
     result = get_file(url_launcher_bat, launcher_shell_path)
     if not result:
-        logger.error("Update of launcher aborted due to an error in getting the  file from GitHub")
+        logger.error(f"Update of launcher aborted due to an error in getting the shell script file from GitHub for the os {global_variables.operating_system}")
         return
 
     try:
@@ -99,7 +99,7 @@ def update_launcher():
     new_launcher_version_path = os.path.join("tmp", "launcher_version.txt")
     for path in [launcher_py_old_path, launcher_bat_old_path, "launcher_version.txt"]:
         _check_path(path)
-        os.remove(path)
+        shutil.remove(path)
 
     shutil.move(new_launcher_version_path, "launcher_version.txt", False)
     logger.info("Old files deleted.")

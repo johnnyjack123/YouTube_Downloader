@@ -379,7 +379,7 @@ def move_video_file(video_file, download_folder, filename_addition):
     output_file = os.path.join(download_folder, file_name + "_" + filename_addition + video_container)
     folder = os.path.dirname(video_file)
     new_name = os.path.join(folder, file_name + "_" + filename_addition + video_container)
-    os.rename(video_file, new_name)
+    shutil.rename(video_file, new_name)
     shutil.move(new_name, output_file, True)
 
 def move_audio_file(audio_file, download_folder, filename_addition, video_file = ""):
@@ -388,14 +388,14 @@ def move_audio_file(audio_file, download_folder, filename_addition, video_file =
         output_file = os.path.join(download_folder, file_name + "_" + filename_addition + audio_container)
         folder = os.path.dirname(audio_file)
         new_name = os.path.join(folder, file_name + "_" + filename_addition + audio_container)
-        os.rename(video_file, new_name)
+        shutil.rename(video_file, new_name)
         shutil.move(new_name, output_file, True)
     else:
         file_name, audio_container = os.path.splitext(os.path.basename(audio_file))
         output_file = os.path.join(download_folder, file_name + audio_container)
         folder = os.path.dirname(audio_file)
         new_name = os.path.join(folder, file_name + audio_container)
-        os.rename(audio_file, new_name)
+        shutil.rename(audio_file, new_name)
         shutil.move(new_name, output_file, True)
 
 def download():
@@ -516,7 +516,7 @@ def download():
                         send_status("task_list", [video_task, audio_task, merge_task])
                         send_status("console", ["Converting successful.", source])
                         #move_video_file(output_file, download_folder, "")
-                        os.remove(audio_file)
+                        shutil.remove(audio_file)
                     else:
                         send_status("console",["Converting failed. Downloaded audio is still storaged in your download folder.", source])
                 elif not video_container == "mp3": # Exception for non merged videostreams/audiostreams to move from tmp in chosen download folder
