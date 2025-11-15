@@ -3,7 +3,7 @@
 ## Introduction
 
 YouTube Downloader is a tool based on [yt-dlp](https://github.com/yt-dlp/yt-dlp?tab=readme-ov-file) that allows you to easily download YouTube videos to your computer.
-
+**DISCLAIMER**: Use this software at your own risk. The creator of this tool is not responsible for any damage to your computer caused by this Python script.
 ## Installation
 
 ### Automatic installation (easy and quick, recommended)

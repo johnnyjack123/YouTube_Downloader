@@ -1,20 +1,21 @@
 import subprocess
 import os
-import shutil
 import sys
 import json
-import program_files.globals as global_variables
-from program_files.sockets import progress, console, update_tasks, emit_queue, update_current_video, cancel_button
 import webbrowser
 import threading
 import time
+import requests
+import program_files.globals as global_variables
+from program_files.sockets import progress, console, update_tasks, emit_queue, update_current_video, cancel_button
+from program_files.logger import logger
+import program_files.safe_shutil as shutil
+from program_files.safe_shutil import _check_path
 
 download_process = None
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Ordner, wo die aktuelle Datei liegt
-userdata_file = os.path.join(BASE_DIR, "..", "userdata.json")
-
 def save(entry, video_data):
+    userdata_file = global_variables.userdata_file
     with open(userdata_file, "r", encoding="utf-8") as file:
         data = json.load(file)
         if entry == "whole_file":
@@ -26,6 +27,7 @@ def save(entry, video_data):
     return
 
 def read(entry):
+    userdata_file = global_variables.userdata_file
     if entry == "file":
         with open(userdata_file, "r", encoding="utf-8") as file:
             data = json.load(file)
@@ -37,27 +39,26 @@ def read(entry):
             return video_data
 
 def check_for_userdata():
-    default_download_folder = os.path.join(os.path.expanduser("~"), "Videos")
-    default_content = {
-        "download_folder": default_download_folder,
-        "video_quality": "best",
-        "video_resolution": "1080",
-        "video_resolution_command": "bv[height<=1080]+ba[height<=1080]",
-        "video_container": "mp4",
-        "custom_resolution_checkbox": False,
-        "video_checkbox": True,
-        "audio_checkbox": True,
-        "yt-dlp_update_time": "2025-09-06T17:40:36.348409",
-        "open_browser": "yes",
-        "auto_update": "yes",
-        "auto_merge": "yes",
-        "download_previous_queue": "yes",
-        "video_queue": [],
-        "force_h264": False
+    print("Check for userdata.")
+    userdata_file = global_variables.userdata_file
+    entry = {
+        "userdata": global_variables.userdata,
+        "program_data": global_variables.program_data,
+        "download_data": global_variables.download_data
     }
     if not os.path.exists(userdata_file):
         with open(userdata_file, "w", encoding="utf-8") as f:
-            json.dump(default_content, f, indent=4, ensure_ascii=False)
+            json.dump(entry, f, indent=4, ensure_ascii=False)
+        print("Created userdata")
+    return
+
+def get_os():
+    if global_variables.operating_system == "":
+        operating_system = sys.platform
+        global_variables.operating_system = operating_system
+        return
+    else:
+        return
 
 def ensure_ffmpeg():
     if shutil.which("ffmpeg") is not None:
@@ -67,24 +68,27 @@ def ensure_ffmpeg():
         install = input("Do you wanna install ffmpeg now? Type [yes] or [no]. You also can manually download ffmpeg from the official ffmpeg website: https://ffmpeg.org/download.html . You are not able to use this tool without ffmpeg installed.")
         if install == "yes":
                 try:
-                    if sys.platform == "win32":
+                    get_os()
+                    if global_variables.operating_system == "win32":
                         subprocess.run(
                             ["winget", "install", "-e", "--id", "Gyan.FFmpeg"],
                             check=True
                         )
                         print("ffmpeg successfully installed.")
                         return "restart"
-                    elif sys.platform == "linux":
+                    elif global_variables.operating_system == "linux":
                         subprocess.run(
                             ["sudo", "apt", "install", "-y", "ffmpeg"],
                             check=True
                         )
+                        print("ffmpeg successfully installed.")
                         return "restart"
-                    elif sys.platform == "darwin":
+                    elif global_variables.operating_system == "darwin":
                         subprocess.run(
                             ["brew", "install", "ffmpeg"],
                             check=True
                         )
+                        print("ffmpeg successfully installed.")
                         return "restart"
                     else:
                         print("OS not found. Please install ffmpeg manually from the official website: https://ffmpeg.org/download.html")
@@ -95,15 +99,16 @@ def ensure_ffmpeg():
         else:
             return False
 
-def create_task_list(video_data, video_task, audio_task, merge_task):
+def create_task_list(video_entry, video_task, audio_task, merge_task):
     task_list = []
     file = read("file")
-    if video_data["video_container"] != "mp3":
-        if video_data["video_checkbox"]:
+    download_data = file["download_data"]
+    if video_entry["video_container"] != "mp3":
+        if video_entry["video_checkbox"]:
             task_list.append({"name": "Download Video", "status": video_task})
-        if video_data["audio_checkbox"]:
+        if video_entry["audio_checkbox"] and not video_entry["video_quality"] == "best":
             task_list.append({"name": "Download Audio", "status": audio_task})
-        if file["auto_merge"] == "yes" and video_data["video_checkbox"] and video_data["audio_checkbox"]:
+        if download_data["auto_merge"] == "yes" and video_entry["video_checkbox"] and video_entry["audio_checkbox"] and not video_entry["video_quality"] == "best":
             task_list.append({"name": "Merge", "status": merge_task})
     else:
         task_list.append({"name": "Download Audio", "status": audio_task})
@@ -169,8 +174,12 @@ def manage_download():
             global_variables.is_downloading = True
             cancel_button()
             video_entry = global_variables.video_queue[0]
-            save("video_queue", global_variables.video_queue)
-            #video_entry = global_variables.video_queue.pop(0)
+            logger.info(f"Video download data: {video_entry}")
+            file = read("file")
+            program_data = file["program_data"]
+            program_data["video_queue"] = global_variables.video_queue
+            file["program_data"] = program_data
+            save("whole_file", file)
             emit_queue()
 
             global_variables.current_video_data = video_entry
@@ -178,7 +187,7 @@ def manage_download():
             video_json = json.dumps(video_entry)
 
             download_process = subprocess.Popen(
-                [sys.executable, "-u", "program_files/download_and_merge.py", video_json],
+                [sys.executable, "-m", "program_files.download_and_merge", video_json, "--project-dir", os.path.abspath(".")],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,  # Fehler landen auch im stdout
                 text=True,
@@ -192,7 +201,7 @@ def manage_download():
                 try:
                     data = json.loads(line)
                     if data["function"] == "task_list":
-                        global_variables.task_list = create_task_list(data["args"][0], data["args"][1], data["args"][2], data["args"][3])
+                        global_variables.task_list = create_task_list(video_entry, data["args"][0], data["args"][1], data["args"][2])
                         update_tasks()
                     elif data["function"] == "progress":
                         progress(data["args"][0], data["args"][1], data["args"][2], data["args"][3])
@@ -208,8 +217,11 @@ def manage_download():
                         print(data)
                 except json.JSONDecodeError:
                     print("Subprocess output:", line)
-                    save("video_queue", global_variables.video_queue)
-                    #console("Subprocess output: " + str(line)) <-- uncomment for error messages in the web console
+                    file = read("file")
+                    program_data = file["program_data"]
+                    program_data["video_queue"] = global_variables.video_queue
+                    file["program_data"] = program_data
+                    save("whole_file", file)                    #console("Subprocess output: " + str(line)) <-- uncomment for error messages in the web console
 
             download_process.wait()
             print("Process finished with code", download_process.returncode)
@@ -219,10 +231,18 @@ def manage_download():
 
             if download_process.returncode == 0 and not global_variables.abort:
                 global_variables.video_queue.pop(0)
-                save("video_queue", global_variables.video_queue)
+                file = read("file")
+                program_data = file["program_data"]
+                program_data["video_queue"] = global_variables.video_queue
+                file["program_data"] = program_data
+                save("whole_file", file)
             else:
                 console("Download interrupted — keeping in queue.", "python")
-                save("video_queue", global_variables.video_queue)
+                file = read("file")
+                program_data = file["program_data"]
+                program_data["video_queue"] = global_variables.video_queue
+                file["program_data"] = program_data
+                save("whole_file", file)
         else:
             global_variables.current_video_data["video_name"] = "No active download."
             update_current_video()
@@ -234,12 +254,55 @@ def abort_download():
 
 def check_for_queue():
     data = read("file")
-    download_previous_queue = data["download_previous_queue"]
+    userdata = data["userdata"]
+    program_data = data["program_data"]
+    download_previous_queue = userdata["download_previous_queue"]
     if download_previous_queue == "yes":
-        video_queue = data["video_queue"]
+        video_queue = program_data["video_queue"]
         if video_queue:
             global_variables.video_queue = video_queue
             console("Continuing download previous queue.", "python")
     else:
-        data["video_queue"] = []
+        program_data["video_queue"] = []
+        data["program_data"] = program_data
         save("whole_file", data)
+
+def create_folders():
+    if not os.path.exists("tmp"):
+        os.makedirs("tmp")
+
+    tmp_launcher_folder = os.path.join("tmp", "launcher")
+    if not os.path.exists(tmp_launcher_folder):
+        os.makedirs(tmp_launcher_folder)
+    else:
+        shutil.rmtree(tmp_launcher_folder)
+        os.makedirs(tmp_launcher_folder)
+
+    tmp_old_files = os.path.join("tmp", "old_files")
+    if not os.path.exists(tmp_old_files):
+        os.makedirs(tmp_old_files)
+    else:
+        shutil.rmtree(tmp_old_files)
+        os.makedirs(tmp_old_files)
+
+    tmp_old_files_launcher = os.path.join("tmp", "old_files", "launcher")
+    if not os.path.exists(tmp_old_files_launcher):
+        os.makedirs(tmp_old_files_launcher)
+    else:
+        shutil.rmtree(tmp_old_files_launcher)
+        os.makedirs(tmp_old_files_launcher)
+
+    tmp_old_files_main = os.path.join("tmp", "old_files", "main")
+    if not os.path.exists(tmp_old_files_main):
+        os.makedirs(tmp_old_files_main)
+    else:
+        shutil.rmtree(tmp_old_files_main)
+        os.makedirs(tmp_old_files_main)
+
+    va = os.path.join("tmp", "va")
+    if not os.path.exists(va):
+        os.makedirs(va)
+    else:
+        shutil.rmtree(va)
+        os.makedirs(va)
+    return

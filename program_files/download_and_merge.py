@@ -1,10 +1,20 @@
 import yt_dlp
 import os
-import logging
 import subprocess
 import sys
 import json
+import argparse
+import program_files.globals as global_variables
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--project-dir", default=None)
+args, _ = parser.parse_known_args()
+
+if args.project_dir:
+    global_variables.project_dir = args.project_dir
+
+from program_files.logger import logger
+import program_files.safe_shutil as shutil
 state_logger_download = False
 state_logger_prepare = True
 download_type = ""
@@ -84,11 +94,9 @@ def get_frame_count_estimate(video_file):
     # --- Wenn gar nichts geht ---
     return 0
 
-
-
 def send_status(function_name, function_args):
     cmd = json.dumps({"function": function_name, "args": function_args})
-    print(cmd)
+    print(cmd, flush=True)
     return
 
 def progress_hook(d):
@@ -139,7 +147,7 @@ class Logger:
 def merging_video_audio(video_file, audio_file, output_file):
     source = "python"
     send_status("console", ["Initiating merging of video and audio stream...", source])
-
+    logger.info("Initiating merging of video and audio stream...")
     # --- Audio codec check ---
     result = subprocess.run([
         "ffprobe", "-v", "error",
@@ -167,7 +175,8 @@ def merging_video_audio(video_file, audio_file, output_file):
     audio_option = "copy" if audio_codec.lower() == "aac" else "aac"
 
     file = read("file")
-    if file["force_h264"]:
+    userdata = file["userdata"]
+    if userdata["force_h264"]:
         is_mp4_container = video_file.lower().endswith(".mp4")
 
         if is_mp4_container and video_codec.lower() == "h264":
@@ -190,12 +199,9 @@ def merging_video_audio(video_file, audio_file, output_file):
             send_status("console", [f"Audio codec {audio_codec} not supported in MOV, re-encoding to AAC", source])
             audio_option = "aac"
 
-
-
     total_frames = get_frame_count_estimate(video_file)
-    print(f"DEBUG: total_frames={total_frames!r}")
-    send_status("console", [f"Total frames: {total_frames}.", source])
-
+    #send_status("console", [f"Total frames: {total_frames}.", source])
+    logger.info(f"Total frames: {total_frames}")
     try:
         total_frames = int(total_frames)
     except (ValueError, TypeError):
@@ -207,7 +213,8 @@ def merging_video_audio(video_file, audio_file, output_file):
         "-i", audio_file,
         "-c:v", video_option,
         "-c:a", audio_option,
-        "-progress", "pipe:1",  # ← FFmpeg writes progress to stdout
+        "-movflags", "faststart",
+        "-progress", "pipe:1",  # FFmpeg writes progress to stdout
         "-nostats",  # supress logs in console
         output_file
     ]
@@ -240,11 +247,11 @@ def merging_video_audio(video_file, audio_file, output_file):
         send_status("console", ["Merging successful", "ffmpeg"])
         return True
 
-
 def convert_audio_to_mp3(input_file, output_file):
     source = "python"
     send_status("console", ["Converting audio to MP3...", source])
-
+    logger.info("Convert audio to mp3.")
+    logger.info(f"Input file: {input_file}, output_file: {output_file}")
     # --- Check codec ---
     result = subprocess.run([
         "ffprobe", "-v", "error",
@@ -295,7 +302,7 @@ def convert_audio_to_mp3(input_file, output_file):
 def download_video(video_input, download_folder, video_url):
     ydl_opts_video = {
         'format': video_input,
-        'outtmpl': os.path.join(download_folder, '%(title)s_video'),
+        'outtmpl': os.path.join(download_folder, '%(title)s_video.%(ext)s'),
         'progress_hooks': [progress_hook],
         'no_color': True, # Suppresses coloured output, as otherwise the numbers cannot be displayed correctly in the browser
         'restrictfilenames': True,
@@ -310,7 +317,7 @@ def download_video(video_input, download_folder, video_url):
 def download_audio(audio_input, download_folder, video_url):
     ydl_opts_audio = {
         'format': audio_input,
-        'outtmpl': os.path.join(download_folder, '%(title)s_audio'),
+        'outtmpl': os.path.join(download_folder, '%(title)s_audio.%(ext)s'),
         'progress_hooks': [progress_hook],
         'no_color': True, # Suppresses coloured output, as otherwise the numbers cannot be displayed correctly in the browser
         'restrictfilenames': True,
@@ -322,10 +329,80 @@ def download_audio(audio_input, download_folder, video_url):
         audio_file = ydl.prepare_filename(info_audio)
     return audio_file
 
+def create_download_commands(custom_resolution, video_resolution, video_quality, video_checkbox, audio_quality, audio_checkbox, source, ):
+    video_input = ""
+    audio_input = ""
+    if custom_resolution == "yes":
+        filename_addition = video_resolution
+        if video_checkbox and not audio_checkbox:
+            video_input = 'bv[height<=' + video_resolution + ']/best'
+        elif video_checkbox and audio_checkbox:
+            video_input = 'bv[height<=' + video_resolution + ']'
+            audio_input = 'bestaudio'
+        elif not video_checkbox and audio_checkbox:
+            # audio_input = 'ba[height<=' + video_resolution + ']'
+            audio_input = 'bestaudio'
+        else:
+            send_status("console", ["No stream selected.", source])
+    else:
+        if video_checkbox and not audio_checkbox:
+            video_input = video_quality
+            logger.info(f"Video input: {video_input}")
+            if video_input == "best":
+                logger.info("In if")
+                filename_addition = "average"  # Because "best" corresponds to "average", best is the best available and already merged stream, while bestvideo is the best available unmerged video stream
+            else:
+                logger.info("In else")
+                filename_addition = video_quality
+        elif video_checkbox and audio_checkbox:
+            video_input = video_quality
+            audio_input = audio_quality
+
+            logger.info(f"Video input: {video_input}")
+            if video_input == "best":
+                logger.info("In if")
+                filename_addition = "average"  # Because "best" corresponds to "average", best is the best available and already merged stream, while bestvideo is the best available unmerged video stream
+            else:
+                logger.info("In else")
+                filename_addition = video_quality
+        elif not video_checkbox and audio_checkbox:
+            audio_input = audio_quality
+
+            filename_addition = audio_quality
+        else:
+            send_status("console", ["No stream selected.", source])
+            return
+    return video_input, audio_input, filename_addition
+
+def move_video_file(video_file, download_folder, filename_addition):
+    file_name, video_container = os.path.splitext(os.path.basename(video_file))
+    output_file = os.path.join(download_folder, file_name + "_" + filename_addition + video_container)
+    folder = os.path.dirname(video_file)
+    new_name = os.path.join(folder, file_name + "_" + filename_addition + video_container)
+    shutil.rename(video_file, new_name)
+    shutil.move(new_name, output_file, True)
+
+def move_audio_file(audio_file, download_folder, filename_addition, video_file = ""):
+    if video_file:
+        file_name, audio_container = os.path.splitext(os.path.basename(audio_file))
+        output_file = os.path.join(download_folder, file_name + "_" + filename_addition + audio_container)
+        folder = os.path.dirname(audio_file)
+        new_name = os.path.join(folder, file_name + "_" + filename_addition + audio_container)
+        shutil.rename(video_file, new_name)
+        shutil.move(new_name, output_file, True)
+    else:
+        file_name, audio_container = os.path.splitext(os.path.basename(audio_file))
+        output_file = os.path.join(download_folder, file_name + audio_container)
+        folder = os.path.dirname(audio_file)
+        new_name = os.path.join(folder, file_name + audio_container)
+        shutil.rename(audio_file, new_name)
+        shutil.move(new_name, output_file, True)
+
 def download():
     global state_logger_download, download_type, state_logger_prepare
     source = "python"
     send_status("console", ["Preparing download.", source])
+    logger.info("Preparing download.")
     try:
         video_json = sys.argv[1]
         current_video = json.loads(video_json)
@@ -334,10 +411,7 @@ def download():
         audio_task = "pending"
         merge_task = "pending"
 
-        send_status("task_list", [current_video, video_task, audio_task, merge_task])
-
-        logging.basicConfig(filename="../debug.log", level=logging.DEBUG)
-        logging.debug(current_video)
+        send_status("task_list", [video_task, audio_task, merge_task])
 
         video_url = current_video["video_url"]
         video_resolution = current_video["video_resolution"]
@@ -347,118 +421,131 @@ def download():
         custom_resolution = current_video["custom_resolution_checkbox"]
         video_checkbox = current_video["video_checkbox"]
         audio_checkbox = current_video["audio_checkbox"]
-        filename_addition = ""
+
+        file = read("file")
+        program_data = file["program_data"]
+        download_data = file["download_data"]
+        download_folder = program_data["download_folder"]
+        merge = download_data["auto_merge"]
 
         if video_url:
             send_status("progress", ["preparing", 0, 0, 0])
 
-            download_folder = read("download_folder")
-            if not os.path.exists(download_folder):
-                return "Not valid folder"
-
-            if custom_resolution == "yes":
-                filename_addition = video_resolution
-                if video_checkbox and not audio_checkbox:
-                    video_input = 'bv[height<=' + video_resolution + ']/best'
-                elif video_checkbox and audio_checkbox:
-                    video_input = 'bv[height<=' + video_resolution + ']'
-                    audio_input = 'ba[height<=' + video_resolution + ']/best'
-                elif not video_checkbox and audio_checkbox:
-                    #audio_input = 'ba[height<=' + video_resolution + ']'
-                    audio_input = 'bestaudio'
-                else:
-
-                    send_status("console", ["No stream selected.", source])
+            if merge == "yes":
+                download_tmp_folder = os.path.join("tmp", "va")
             else:
-                if video_checkbox and not audio_checkbox:
-                    video_input = video_quality
+                download_tmp_folder = download_folder
+            if not os.path.exists(download_tmp_folder):
+                logger.info("va folder doesn't exists")
+                return "va folder doesn't exists"
 
-                    filename_addition = video_quality
-                elif video_checkbox and audio_checkbox:
-                    video_input = video_quality
-                    audio_input = audio_quality
+            # Create file name addition and download quality command for YouTube dlp
+            video_input, audio_input, filename_addition = create_download_commands(custom_resolution, video_resolution, video_quality, video_checkbox, audio_quality, audio_checkbox, source)
 
-                    filename_addition = video_quality
-                elif not video_checkbox and audio_checkbox:
-                    audio_input = audio_quality
-
-                    filename_addition = audio_quality
-                else:
-                    send_status("console", ["No stream selected.", source])
             try:
-                if video_checkbox:
+                # Download video and audio
+                if video_checkbox and video_input:
                     download_type = "video"
                     video_task = "working"
-                    send_status("task_list", [current_video, video_task, audio_task, merge_task])
+                    send_status("task_list", [video_task, audio_task, merge_task])
                     send_status("download_type", download_type)
                     send_status("console", [f"Preparing to download {download_type}.", source])
 
-                    video_file = download_video(video_input, download_folder, video_url)
-
+                    video_file = download_video(video_input, download_tmp_folder, video_url)
                     send_status("state_logger", True) # So that logger knows, when new video starts, helps to display "Download" only once per video
                     state_logger_download = True
                     state_logger_prepare = True
                     send_status("console", [f"Done downloading {download_type}.", source])
                     video_task = "done"
-                    send_status("task_list", [current_video, video_task, audio_task, merge_task])
+                    send_status("task_list", [video_task, audio_task, merge_task])
 
-                if audio_checkbox:
+                if audio_checkbox and audio_input:
                     download_type = "audio"
                     audio_task = "working"
-                    send_status("task_list", [current_video, video_task, audio_task, merge_task])
+                    send_status("task_list", [video_task, audio_task, merge_task])
 
                     send_status("download_type", download_type)
                     send_status("console", [f"Preparing to download {download_type}.", source])
 
-                    audio_file = download_audio(audio_input, download_folder, video_url)
+                    audio_file = download_audio(audio_input, download_tmp_folder, video_url)
 
                     send_status("state_logger",True)  # So that logger knows, when new video starts, helps to display "Download" only once per video
                     state_logger_download = True
                     state_logger_prepare = True
                     send_status("console", [f"Done downloading {download_type}.", source])
                     audio_task = "done"
-                    send_status("task_list", [current_video, video_task, audio_task, merge_task])
+                    send_status("task_list", [video_task, audio_task, merge_task])
 
-                file_data = read("file")
                 state_logger_download = False
                 state_logger_prepare = False
-                merge = file_data["auto_merge"]
-                if video_checkbox and audio_checkbox and merge:
+
+                # Detect if merge is necessary and move files to the correct chosen download folder
+                if (video_checkbox and video_input) and (audio_checkbox and audio_input) and merge == "yes": # Regular merge
                     merge_task = "working"
-                    send_status("task_list", [current_video, video_task, audio_task, merge_task])
+                    send_status("task_list", [video_task, audio_task, merge_task])
 
                     send_status("console", ["Merging video and audio stream.", source])
-                    output_file = video_file + "_" + filename_addition + "_merged." + video_container
+                    logger.info("Merging video and audio stream.")
+                    output_file = os.path.join(download_folder, os.path.splitext(os.path.basename(video_file))[0] + "_" + filename_addition + "." + video_container) # Absolute path to download folder
                     result = merging_video_audio(video_file, audio_file, output_file)
                     if result:
                         send_status("console", ["Merging successful.", source])
+                        logger.info("Merging successful.")
                         merge_task = "done"
-                        send_status("task_list", [current_video, video_task, audio_task, merge_task])
-                        os.remove(video_file)
-                        os.remove(audio_file)
+                        send_status("task_list", [video_task, audio_task, merge_task])
+                        shutil.rmtree(download_tmp_folder) # Remove old video and audio file after successful merge
+                        os.makedirs(download_tmp_folder) # Create the tmp folder again for the next download
                     else:
                         print("Merging failed. Downloaded video and audio are still storaged in your download folder.")
                         send_status("console", ["Merging failed. Downloaded video and audio are still storaged in your download folder.", source])
-
+                        logger.error("Merging failed. Downloaded video and audio are still storaged in your download folder.")
+                        exception = True
+                        shutil.move(video_file, download_folder, exception)
+                        shutil.move(audio_file, download_folder, exception)
                 elif not video_checkbox and audio_checkbox and video_container == "mp3": # Exception for mp3 Format, so you can download for example music as a mp3 file
                     merge_task = "working"
-                    send_status("task_list", [current_video, video_task, audio_task, merge_task])
+                    send_status("task_list", [video_task, audio_task, merge_task])
 
                     send_status("console", ["Convert audio in mp3...", source])
-                    output_file = audio_file + "_" + filename_addition + "_merged." + video_container
+                    logger.info(f"Audio file:{audio_file}")
+                    output_file = os.path.join(download_folder, os.path.splitext(os.path.basename(audio_file))[0] + "." + video_container) # Absolute path to download folder
                     result = convert_audio_to_mp3(audio_file, output_file)
                     if result:
                         print("In result.")
                         merge_task = "done"
-                        send_status("task_list", [current_video, video_task, audio_task, merge_task])
+                        send_status("task_list", [video_task, audio_task, merge_task])
                         send_status("console", ["Converting successful.", source])
-                        os.remove(audio_file)
+                        #move_video_file(output_file, download_folder, "")
+                        shutil.remove(audio_file)
                     else:
                         send_status("console",["Converting failed. Downloaded audio is still storaged in your download folder.", source])
+                elif not video_container == "mp3": # Exception for non merged videostreams/audiostreams to move from tmp in chosen download folder
+                    if not merge == "yes" and (video_checkbox and video_input) and (audio_checkbox and audio_input): # No merge, but video and audio
+                        logger.info("1")
+                        move_video_file(video_file, download_folder, filename_addition)
+                        move_audio_file(audio_file, download_folder, filename_addition, video_file)
+                    elif (video_checkbox and video_input) and (audio_checkbox and not audio_input): # Merge, but video and audio already merged
+                        logger.info("2")
+                        move_video_file(video_file, download_folder, filename_addition)
+                    elif (video_checkbox and video_input) or (audio_checkbox and audio_input): # Merge, but either video or audio
+                        logger.info("3")
+                        if video_checkbox:
+                            logger.info("3.1")
+                            move_video_file(video_file, download_folder, filename_addition)
+                        elif audio_checkbox:
+                            logger.info("3.2")
+                            move_audio_file(audio_file, download_folder, filename_addition)
+                    #elif (video_checkbox and video_input) and (audio_checkbox and not audio_input): # Merge, but only video and not audio
+                    #    move_video_file(video_file, download_folder, filename_addition)
+                    #elif (not video_checkbox and not video_input) and (audio_checkbox and audio_input): # Merge, but only audio and not video
+                    #    logger.info(f"audio_file: {audio_file}")
+                    #    move_video_file(audio_file, download_folder, filename_addition)
                 send_status("progress", ["finished", False, False, False])
-
+                logger.info("Successfully downloaded video.")
+                send_status("console", [f"Successfully downloaded video. Your video is now stored in {download_folder}.", source])
             except Exception as e:
                 print("Download failed:", e)
+                logger.error(f"Download failed: {e}")
     finally:
         download_thread = False
 
