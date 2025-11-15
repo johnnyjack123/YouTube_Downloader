@@ -338,7 +338,7 @@ def create_download_commands(custom_resolution, video_resolution, video_quality,
             video_input = 'bv[height<=' + video_resolution + ']/best'
         elif video_checkbox and audio_checkbox:
             video_input = 'bv[height<=' + video_resolution + ']'
-            audio_input = 'ba[height<=' + video_resolution + ']/best'
+            audio_input = 'bestaudio'
         elif not video_checkbox and audio_checkbox:
             # audio_input = 'ba[height<=' + video_resolution + ']'
             audio_input = 'bestaudio'
@@ -435,7 +435,6 @@ def download():
                 download_tmp_folder = os.path.join("tmp", "va")
             else:
                 download_tmp_folder = download_folder
-            logger.info(f"Download folder: {download_tmp_folder}")
             if not os.path.exists(download_tmp_folder):
                 logger.info("va folder doesn't exists")
                 return "va folder doesn't exists"

@@ -100,7 +100,6 @@ def ensure_ffmpeg():
             return False
 
 def create_task_list(video_entry, video_task, audio_task, merge_task):
-    print(f"Video task: {video_task}, video_entry: {video_entry}, audio_task: {audio_task}, merge_task: {merge_task}")
     task_list = []
     file = read("file")
     download_data = file["download_data"]
@@ -114,7 +113,6 @@ def create_task_list(video_entry, video_task, audio_task, merge_task):
     else:
         task_list.append({"name": "Download Audio", "status": audio_task})
         task_list.append({"name": "Re-encode audio to mp3", "status": merge_task})
-    print(f"TAsk_list: {task_list}")
     return task_list
 
 def open_browser():
@@ -176,6 +174,7 @@ def manage_download():
             global_variables.is_downloading = True
             cancel_button()
             video_entry = global_variables.video_queue[0]
+            logger.info(f"Video download data: {video_entry}")
             file = read("file")
             program_data = file["program_data"]
             program_data["video_queue"] = global_variables.video_queue

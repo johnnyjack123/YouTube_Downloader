@@ -163,7 +163,6 @@ def check_for_update_main():
         logger.error(f"Error in update process: {result}")
 
 log_message("\n", raw=True)
-log_message("\n", raw=True)
 log_message(f"---------- Start program at {datetime.now()} ----------", raw=True)
 
 check_for_userdata()

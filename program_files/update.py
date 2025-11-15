@@ -36,7 +36,7 @@ def check_for_updates(url_version, file_name, update):
             logger.error(f"No {file_name} available.")
             return "Update"
     else:
-        return "Launch"
+        return "launcher_version.txt is not available on GitHub."
 
 def get_file(url, save_path):
     file = read("file")
