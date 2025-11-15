@@ -473,21 +473,21 @@ def download():
                         os.remove(audio_file)
                     else:
                         send_status("console",["Converting failed. Downloaded audio is still storaged in your download folder.", source])
-                elif not video_container == "mp3" and not merge == "yes" or not video_checkbox and audio_checkbox or video_checkbox and not audio_checkbox: # Exception for non merged videostreams/audiostreams to move from tmp in choosen download folder
-                    if video_checkbox:
-                        file_name, video_container = os.path.splitext(os.path.basename(video_file))
-                        output_file = os.path.join(download_folder, file_name + "_" + filename_addition + video_container)
-                        folder = os.path.dirname(video_file)
-                        new_name = os.path.join(folder, file_name + "_" + filename_addition + video_container)
-                        os.rename(video_file, new_name)
-                        shutil.move(new_name, output_file, True)
-                    if audio_checkbox:
-                        file_name, audio_container = os.path.splitext(os.path.basename(audio_file))
-                        output_file = os.path.join(download_folder, file_name + "_" + filename_addition + audio_container)
-                        folder = os.path.dirname(audio_file)
-                        new_name = os.path.join(folder, file_name + "_" + filename_addition + audio_container)
-                        os.rename(video_file, new_name)
-                        shutil.move(new_name, output_file, True)
+                elif not video_container == "mp3": # Exception for non merged videostreams/audiostreams to move from tmp in choosen download folder
+                    if not merge == "yes" and (video_checkbox and video_input) and (audio_checkbox and audio_input):
+                        move_video_file(video_file, download_folder, filename_addition)
+                        move_audio_file(video_file, audio_file, download_folder, filename_addition)
+                    elif not merge == "yes" and (video_checkbox and video_input) and (
+                            audio_checkbox and not audio_input):
+                        move_video_file(video_file, download_folder, filename_addition)
+                    elif merge == "yes" and (video_checkbox and video_input) or (audio_checkbox and audio_input):
+                        if video_checkbox:
+                            move_video_file(video_file, download_folder, filename_addition)
+                        elif audio_checkbox:
+                            move_audio_file(video_file, audio_file, download_folder, filename_addition)
+                    elif merge == "yes" and (video_checkbox and video_input) and (
+                            audio_checkbox and not audio_input):
+                        move_video_file(video_file, download_folder, filename_addition)
                 send_status("progress", ["finished", False, False, False])
                 logger.info("Successfully downloaded video.")
 
@@ -496,6 +496,22 @@ def download():
                 logger.error(f"Download failed: {e}")
     finally:
         download_thread = False
+
+def move_video_file(video_file, download_folder, filename_addition):
+    file_name, video_container = os.path.splitext(os.path.basename(video_file))
+    output_file = os.path.join(download_folder, file_name + "_" + filename_addition + video_container)
+    folder = os.path.dirname(video_file)
+    new_name = os.path.join(folder, file_name + "_" + filename_addition + video_container)
+    os.rename(video_file, new_name)
+    shutil.move(new_name, output_file, True)
+
+def move_audio_file(video_file, audio_file, download_folder, filename_addition):
+    file_name, audio_container = os.path.splitext(os.path.basename(audio_file))
+    output_file = os.path.join(download_folder, file_name + "_" + filename_addition + audio_container)
+    folder = os.path.dirname(audio_file)
+    new_name = os.path.join(folder, file_name + "_" + filename_addition + audio_container)
+    os.rename(video_file, new_name)
+    shutil.move(new_name, output_file, True)
 
 if __name__ == "__main__":
     download()
