@@ -12,6 +12,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.14.0/ScrollTrigger.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.14.0/SplitText.min.js"></script>
 </head>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.min.js"></script>
+
+<script>
+    // Alle Tooltips aktivieren
+    document.addEventListener("DOMContentLoaded", () => {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
+    });
+</script>
 <body class="p-4">
 
 <div class="container">
@@ -19,14 +29,17 @@
         <img src="{{ url_for('static', filename='logo/logo.png') }}" alt="Title" class="title-image">
     </div>
     <div class="button-row mb-4">
-        <a href="{{ url_for('choose_download_folder_page') }}" class="btn icon-btn" title="Choose download folder">
-            <img src="{{ url_for('static', filename='icons/folder-open.svg') }}" alt="DownloadFolder">
-        </a>
+        <span data-bs-toggle="tooltip" title="Choose download folder">
+    <a id="folder-button" href="{{ url_for('choose_download_folder_page') }}" class="btn icon-btn">
+        <img src="{{ url_for('static', filename='icons/folder-open.svg') }}" alt="DownloadFolder">
+    </a>
+</span>
         <p><strong>{{ download_folder }} </strong> is used</p>
-
-        <a href="{{ url_for('settings_page') }}" class="btn icon-btn" title="Settings">
-            <img src="{{ url_for('static', filename='icons/settings.svg') }}" alt="Settings">
-        </a>
+        <span data-bs-toggle="tooltip" title="Settings" id="settings-tooltip">
+        <a id="settings-button" href="{{ url_for('settings_page') }}" class="btn icon-btn">
+    <img src="{{ url_for('static', filename='icons/settings.svg') }}" alt="Settings">
+</a>
+        </span>
     </div>
 
     <!-- Grid für drei Spalten -->
@@ -187,7 +200,7 @@
 </div>
 <script>
     var socket = io();
-    var cancelLink = document.getElementById('cancel-download');
+    // var cancelLink = document.getElementById('cancel-download');
 
 // Progress
 socket.on('progress', function (data) {
@@ -205,13 +218,90 @@ text.textContent = `Progress: ${data.percent} | Speed: ${data.speed} | ETA: ${da
 });
 
 // Cancel button
-socket.on("cancel", function (state) {
-if (state === true) {
-    cancelLink.style.display = "inline-block";
-} else {
-    cancelLink.style.display = "none";
+// Elemente laden
+const startDownloadBtn = document.querySelector('.btn-download');
+const cancelLink = document.getElementById('cancel-download');
+const folderButton = document.getElementById('folder-button');
+const settingsButton = document.getElementById('settings-button');
+
+function refreshTooltips() {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+        // bestehende Instanz löschen
+        if (bootstrap.Tooltip.getInstance(el)) {
+            bootstrap.Tooltip.getInstance(el).dispose();
+        }
+        // Tooltip neu aktivieren
+        new bootstrap.Tooltip(el);
+    });
 }
+
+// Funktion, die den UI-Status für laufende Downloads setzt
+function updateDownloadUI(isDownloading) {
+    if (isDownloading) {
+        startDownloadBtn.value = "Add video to queue";
+
+        folderButton.classList.add('disabled');
+        folderButton.style.opacity = "0.5";
+        folderButton.style.cursor = "not-allowed";
+        folderButton.parentElement.setAttribute("data-bs-title", "Not available during download.");
+
+        settingsButton.classList.add('disabled');
+        settingsButton.style.opacity = "0.5";
+        settingsButton.style.cursor = "not-allowed";
+        settingsButton.parentElement.setAttribute("data-bs-title", "Not available during download.");
+    } else {
+        startDownloadBtn.value = "Start Download";
+
+        folderButton.classList.remove('disabled');
+        folderButton.style.opacity = "1";
+        folderButton.style.cursor = "pointer";
+        folderButton.title = "Choose download folder";
+        folderButton.parentElement.setAttribute("data-bs-title", "Choose download folder");
+
+        settingsButton.classList.remove('disabled');
+        settingsButton.style.opacity = "1";
+        settingsButton.style.cursor = "pointer";
+        settingsButton.parentElement.setAttribute("data-bs-title", "Settings");
+    }
+
+    refreshTooltips();
+}
+
+
+
+// Socket-Event anpassen, das Cancel-Button anzeigt/versteckt
+socket.on("cancel", function(state) {
+    if (state === true) {
+        cancelLink.style.display = "inline-block";
+        updateDownloadUI(true);
+    } else {
+        cancelLink.style.display = "none";
+        updateDownloadUI(false);
+    }
 });
+
+// Falls Cancel/Resume Buttons (nach Abbruch) über Template kommen, überwache sie auch
+
+const checkCancelResumeButtons = () => {
+    const cancelBtn = document.querySelector('a[href="{{ url_for('cancel_download') }}"]');
+    const resumeBtn = document.querySelector('a[href="{{ url_for('resume_download') }}"]');
+
+    const anyVisible = (cancelBtn && cancelBtn.offsetParent !== null) ||
+                       (resumeBtn && resumeBtn.offsetParent !== null);
+
+    updateDownloadUI(anyVisible);
+}
+
+// Beobachte DOM-Änderungen in dem Bereich, wo Cancel/Resume Buttons sind
+
+const buttonsContainer = document.querySelector('.d-flex.gap-2.mb-4');
+if (buttonsContainer) {
+    const observer = new MutationObserver(() => {
+        checkCancelResumeButtons();
+    });
+    observer.observe(buttonsContainer, { childList: true, subtree: true });
+    checkCancelResumeButtons(); // Initial aufrufen
+}
 
     // Console
 const consoleBox = document.getElementById("console");
@@ -339,6 +429,8 @@ queue.forEach(videoName => {
         // Initial check
         updateContainers();
         checkCustomQuality(videoQualitySelect.value);
+        // Initialer Status
+updateDownloadUI(cancelLink.style.display === "inline-block");
 
         // Event Listener
         audioCheckbox.addEventListener("change", updateContainers);
