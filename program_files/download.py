@@ -14,290 +14,13 @@ if args.project_dir:
     global_variables.project_dir = args.project_dir
 
 from program_files.logger import logger
+from program_files.outsourced_functions import send_status, read
 import program_files.safe_shutil as shutil
-state_logger_download = False
-state_logger_prepare = True
-download_type = ""
-
+from program_files.download_functions import progress_hook, Logger
+from program_files.merge import merging_video_audio, convert_audio_to_mp3
+import program_files.download_merge_globals as download_merge_globals
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Ordner, wo die aktuelle Datei liegt
 userdata_file = os.path.join(BASE_DIR, "..", "userdata.json")
-
-def read(entry):
-    if entry == "file":
-        with open(userdata_file, "r", encoding="utf-8") as file:
-            data = json.load(file)
-            return data
-    elif entry:
-        with open(userdata_file, "r", encoding="utf-8") as file:
-            data = json.load(file)
-            video_data = data[entry]
-            return video_data
-
-def get_frame_count_estimate(video_file):
-    # --- 1. Versuch: nb_frames direkt auslesen ---
-    cmd_nb = [
-        'ffprobe', '-v', 'error',
-        '-select_streams', 'v:0',
-        '-show_entries', 'stream=nb_frames',
-        '-of', 'default=noprint_wrappers=1:nokey=1',
-        video_file
-    ]
-    result_nb = subprocess.run(cmd_nb, capture_output=True, text=True)
-    nb_frames_str = result_nb.stdout.strip()
-
-    if nb_frames_str and nb_frames_str != "N/A":
-        try:
-            return int(nb_frames_str)
-        except ValueError:
-            pass  # Fallback
-
-    # --- 2. Fallback: fps × duration ---
-    cmd_fps = [
-        'ffprobe', '-v', 'error',
-        '-select_streams', 'v:0',
-        '-show_entries', 'stream=avg_frame_rate',
-        '-of', 'default=noprint_wrappers=1:nokey=1',
-        video_file
-    ]
-    fps_str = subprocess.run(cmd_fps, capture_output=True, text=True).stdout.strip()
-
-    cmd_dur = [
-        'ffprobe', '-v', 'error',
-        '-show_entries', 'format=duration',
-        '-of', 'default=noprint_wrappers=1:nokey=1',
-        video_file
-    ]
-    duration_str = subprocess.run(cmd_dur, capture_output=True, text=True).stdout.strip()
-
-    fps = 0.0
-    if fps_str and fps_str != "N/A":
-        try:
-            if "/" in fps_str:
-                num, den = map(int, fps_str.split('/'))
-                if den != 0:
-                    fps = num / den
-            else:
-                fps = float(fps_str)
-        except Exception:
-            fps = 0.0
-
-    duration = 0.0
-    if duration_str and duration_str != "N/A":
-        try:
-            duration = float(duration_str)
-        except Exception:
-            duration = 0.0
-
-    if fps > 0 and duration > 0:
-        return int(duration * fps)
-
-    # --- Wenn gar nichts geht ---
-    return 0
-
-def send_status(function_name, function_args):
-    cmd = json.dumps({"function": function_name, "args": function_args})
-    print(cmd, flush=True)
-    return
-
-def progress_hook(d):
-    #if global_variables.abort_flag:
-    #    console("Download aborted")
-    #   raise yt_dlp.utils.DownloadError("Abort Download!")
-
-    if d['status'] == 'downloading':
-        percent = d.get('_percent_str', '0.0%').strip()
-        speed = d.get('_speed_str', 'N/A')
-        eta = d.get('_eta_str', 'N/A')
-        send_status("progress", ["downloading", percent, speed, eta])
-
-class Logger:
-    def debug(self, msg):
-        global state_logger_download, download_type, state_logger_prepare
-        source = "yt-dlp"
-        if msg.startswith("[info] Testing format"):
-            command = "Testing formats"
-            send_status("console", [command, source])
-        elif msg.startswith("[download]"):
-            if state_logger_download:
-                    command = "Downloading..."
-                    state_logger_download = False
-                    send_status("console", [command, source])
-            else:
-                pass
-        elif msg.startswith("[youtube]"):
-            if state_logger_prepare:
-                command = "Downloading resources."
-                send_status("console", [command, source])
-                state_logger_prepare = False
-            else:
-                pass
-        else:
-            command = msg
-            send_status("console", [command, source])
-    def warning(self, msg):
-        print("WARN:", msg)
-        send_status("console", [msg, "[yt-dlp warning]"])
-
-    def error(self, msg):
-        print("ERROR:", msg)
-        send_status("console", [msg, "yt-dlp error"])
-
-
-
-def merging_video_audio(video_file, audio_file, output_file):
-    source = "python"
-    send_status("console", ["Initiating merging of video and audio stream...", source])
-    logger.info("Initiating merging of video and audio stream...")
-    # --- Audio codec check ---
-    result = subprocess.run([
-        "ffprobe", "-v", "error",
-        "-select_streams", "a:0",
-        "-show_entries", "stream=codec_name",
-        "-of", "default=noprint_wrappers=1:nokey=1",
-        audio_file
-    ], capture_output=True, text=True)
-    audio_codec = result.stdout.strip()
-
-    # --- Video codec check ---
-    result = subprocess.run([
-        "ffprobe", "-v", "error",
-        "-select_streams", "v:0",
-        "-show_entries", "stream=codec_name",
-        "-of", "default=noprint_wrappers=1:nokey=1",
-        video_file
-    ], capture_output=True, text=True)
-    video_codec = result.stdout.strip()
-
-    send_status("console", [f"Audio codec detected: {audio_codec}", source])
-    send_status("console", [f"Video codec detected: {video_codec}", source])
-
-    # --- Default: try copy ---
-    audio_option = "copy" if audio_codec.lower() == "aac" else "aac"
-
-    file = read("file")
-    userdata = file["userdata"]
-    if userdata["force_h264"]:
-        is_mp4_container = video_file.lower().endswith(".mp4")
-
-        if is_mp4_container and video_codec.lower() == "h264":
-            send_status("console", ["MP4 with H.264 detected – muxing without re-encode.", source])
-            video_option = "copy"  # Nur stream kopieren
-        else:
-            send_status("console", [f"Re-encoding video to H.264 (was: {video_codec})", source])
-            video_option = "libx264"
-    else:
-        video_option = "copy"
-
-    # --- Container compatibility check ---
-    if output_file.lower().endswith(".mov"):
-        # MOV cannot handle VP9 or AV1 reliably
-        if video_codec.lower() in ["vp9", "av1"]:
-            print(f"Video codec {video_codec} not supported in MOV, re-encoding to H.264")
-            send_status("console", [f"Video codec {video_codec} not supported in MOV, re-encoding to H.264", source])
-            video_option = "libx264"
-        if audio_codec.lower() != "aac":
-            send_status("console", [f"Audio codec {audio_codec} not supported in MOV, re-encoding to AAC", source])
-            audio_option = "aac"
-
-    total_frames = get_frame_count_estimate(video_file)
-    #send_status("console", [f"Total frames: {total_frames}.", source])
-    logger.info(f"Total frames: {total_frames}")
-    try:
-        total_frames = int(total_frames)
-    except (ValueError, TypeError):
-        total_frames = 0  # oder ein Fallback, wenn du es gar nicht bestimmen kannst
-
-    cmd = [
-        "ffmpeg", "-y",
-        "-i", video_file,
-        "-i", audio_file,
-        "-c:v", video_option,
-        "-c:a", audio_option,
-        "-movflags", "faststart",
-        "-progress", "pipe:1",  # FFmpeg writes progress to stdout
-        "-nostats",  # supress logs in console
-        output_file
-    ]
-
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True)
-
-    send_status("console", ["Start merging...", source])
-
-    for line in process.stdout:
-        line = line.strip()
-        if line.startswith("frame="):
-            try:
-                frame_value = line.split("=")[1].strip()
-                if frame_value != "N/A":
-                    current_frame = int(frame_value)
-                    if total_frames > 0:
-                        percent = round((current_frame / total_frames) * 100, 1)
-                        send_status("progress", ["downloading", f"{percent}%", 0, 0])
-            except Exception as e:
-                print(f"Error in line={line!r}, total_frames={total_frames}: {e}")
-                send_status("console", [f"Error in line={line!r}, total_frames={total_frames}: {e}", source])
-
-    process.wait()
-    if process.returncode != 0:
-        print("\nMerging failed!")
-        send_status("console", ["Merging failed", "ffmpeg"])
-        return False
-    else:
-        print("\nMerging successful.")
-        send_status("console", ["Merging successful", "ffmpeg"])
-        return True
-
-def convert_audio_to_mp3(input_file, output_file):
-    source = "python"
-    send_status("console", ["Converting audio to MP3...", source])
-    logger.info("Convert audio to mp3.")
-    logger.info(f"Input file: {input_file}, output_file: {output_file}")
-    # --- Check codec ---
-    result = subprocess.run([
-        "ffprobe", "-v", "error",
-        "-select_streams", "a:0",
-        "-show_entries", "stream=codec_name",
-        "-of", "default=noprint_wrappers=1:nokey=1",
-        input_file
-    ], capture_output=True, text=True)
-
-    audio_codec = result.stdout.strip().lower()
-    send_status("console", [f"Detected audio codec: {audio_codec}", source])
-
-    # --- Decide conversion method ---
-    if audio_codec == "mp3":
-        # Already MP3 → just copy
-        cmd = [
-            "ffmpeg", "-y",
-            "-i", input_file,
-            "-c:a", "copy",
-            output_file
-        ]
-
-        send_status("console", ["Audio is already MP3, using stream copy.", source])
-    else:
-        # Not MP3 → re-encode to MP3
-        cmd = [
-            "ffmpeg", "-y",
-            "-i", input_file,
-            "-c:a", "libmp3lame",  # best MP3 encoder
-            "-b:a", "192k",        # standard bitrate
-            output_file
-        ]
-        print(f"Re-encoding audio ({audio_codec}) to MP3.")
-        send_status("console", [f"Re-encoding audio ({audio_codec}) to MP3.", source])
-
-    # --- Run conversion ---
-    result = subprocess.run(cmd)
-
-    if result.returncode == 0:
-        print(f"Audio successfully saved as {output_file}")
-        send_status("console", [f"Audio successfully saved as {output_file}", "ffmpeg"])
-        return True
-    else:
-        print("Audio conversion failed")
-        send_status("console", ["Audio conversion failed", "ffmpeg"])
-        return False
 
 def download_video(video_input, download_folder, video_url):
     ydl_opts_video = {
@@ -399,7 +122,6 @@ def move_audio_file(audio_file, download_folder, filename_addition, video_file =
         shutil.move(new_name, output_file, True)
 
 def download():
-    global state_logger_download, download_type, state_logger_prepare
     source = "python"
     send_status("console", ["Preparing download.", source])
     logger.info("Preparing download.")
@@ -453,8 +175,8 @@ def download():
 
                     video_file = download_video(video_input, download_tmp_folder, video_url)
                     send_status("state_logger", True) # So that logger knows, when new video starts, helps to display "Download" only once per video
-                    state_logger_download = True
-                    state_logger_prepare = True
+                    download_merge_globals.state_logger_download = True
+                    download_merge_globals.state_logger_prepare = True
                     send_status("console", [f"Done downloading {download_type}.", source])
                     video_task = "done"
                     send_status("task_list", [video_task, audio_task, merge_task])
@@ -470,14 +192,14 @@ def download():
                     audio_file = download_audio(audio_input, download_tmp_folder, video_url)
 
                     send_status("state_logger",True)  # So that logger knows, when new video starts, helps to display "Download" only once per video
-                    state_logger_download = True
-                    state_logger_prepare = True
+                    download_merge_globals.state_logger_download = True
+                    download_merge_globals.state_logger_prepare = True
                     send_status("console", [f"Done downloading {download_type}.", source])
                     audio_task = "done"
                     send_status("task_list", [video_task, audio_task, merge_task])
 
-                state_logger_download = False
-                state_logger_prepare = False
+                download_merge_globals.state_logger_download = False
+                download_merge_globals.state_logger_prepare = False
 
                 # Detect if merge is necessary and move files to the correct chosen download folder
                 if (video_checkbox and video_input) and (audio_checkbox and audio_input) and merge == "yes": # Regular merge
@@ -535,11 +257,6 @@ def download():
                         elif audio_checkbox:
                             logger.info("3.2")
                             move_audio_file(audio_file, download_folder, filename_addition)
-                    #elif (video_checkbox and video_input) and (audio_checkbox and not audio_input): # Merge, but only video and not audio
-                    #    move_video_file(video_file, download_folder, filename_addition)
-                    #elif (not video_checkbox and not video_input) and (audio_checkbox and audio_input): # Merge, but only audio and not video
-                    #    logger.info(f"audio_file: {audio_file}")
-                    #    move_video_file(audio_file, download_folder, filename_addition)
                 send_status("progress", ["finished", False, False, False])
                 logger.info("Successfully downloaded video.")
                 send_status("console", [f"Successfully downloaded video. Your video is now stored in {download_folder}.", source])

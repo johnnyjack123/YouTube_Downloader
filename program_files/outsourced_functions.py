@@ -306,3 +306,8 @@ def create_folders():
         shutil.rmtree(va)
         os.makedirs(va)
     return
+
+def send_status(function_name, function_args): #Important for download and merge process
+    cmd = json.dumps({"function": function_name, "args": function_args})
+    print(cmd, flush=True)
+    return
