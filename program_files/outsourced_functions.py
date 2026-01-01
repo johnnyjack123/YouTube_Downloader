@@ -187,7 +187,7 @@ def manage_download():
             video_json = json.dumps(video_entry)
 
             download_process = subprocess.Popen(
-                [sys.executable, "-m", "program_files.download_and_merge", video_json, "--project-dir", os.path.abspath(".")],
+                [sys.executable, "-m", "program_files.download", video_json, "--project-dir", os.path.abspath(".")],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,  # Fehler landen auch im stdout
                 text=True,
@@ -221,7 +221,8 @@ def manage_download():
                     program_data = file["program_data"]
                     program_data["video_queue"] = global_variables.video_queue
                     file["program_data"] = program_data
-                    save("whole_file", file)                    #console("Subprocess output: " + str(line)) <-- uncomment for error messages in the web console
+                    save("whole_file", file)
+                    #console("Subprocess output: " + str(line)) <-- uncomment for error messages in the web console
 
             download_process.wait()
             print("Process finished with code", download_process.returncode)

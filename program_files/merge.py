@@ -2,7 +2,9 @@ import subprocess
 from program_files.outsourced_functions import send_status, read
 from program_files.logger import logger
 from program_files.merge_functions import get_frame_count_estimate, gpu_acceleration_cmd, get_va_codecs, choose_merging_option
-
+import os
+import program_files.safe_shutil as shutil
+from program_files.merge_functions import move_video_file, move_audio_file
 
 def merging_video_audio(video_file, audio_file, output_file, gpu_acceleration):
     source = "python"
@@ -125,3 +127,73 @@ def convert_audio_to_mp3(input_file, output_file):
         print("Audio conversion failed")
         send_status("console", ["Audio conversion failed", "ffmpeg"])
         return False
+
+def initiate_merge(video_file, video_checkbox, video_input, video_container, audio_file, audio_checkbox, audio_input,
+                   merge, video_task, audio_task, download_folder, source, filename_addition, download_tmp_folder):
+    try:
+        # Detect if merge is necessary and move files to the correct chosen download folder
+        if (video_checkbox and video_input) and (audio_checkbox and audio_input) and merge == "yes":  # Regular merge
+            merge_task = "working"
+            send_status("task_list", [video_task, audio_task, merge_task])
+
+            send_status("console", ["Merging video and audio stream.", source])
+            logger.info("Merging video and audio stream.")
+            output_file = os.path.join(download_folder, os.path.splitext(os.path.basename(video_file))[
+                0] + "_" + filename_addition + "." + video_container)  # Absolute path to download folder
+            result = merging_video_audio(video_file, audio_file, output_file)
+            if result:
+                send_status("console", ["Merging successful.", source])
+                logger.info("Merging successful.")
+                merge_task = "done"
+                send_status("task_list", [video_task, audio_task, merge_task])
+                shutil.rmtree(download_tmp_folder)  # Remove old video and audio file after successful merge
+                os.makedirs(download_tmp_folder)  # Create the tmp folder again for the next download
+            else:
+                print("Merging failed. Downloaded video and audio are still storaged in your download folder.")
+                send_status("console",
+                            ["Merging failed. Downloaded video and audio are still storaged in your download folder.",
+                             source])
+                logger.error("Merging failed. Downloaded video and audio are still storaged in your download folder.")
+                exception = True
+                shutil.move(video_file, download_folder, exception)
+                shutil.move(audio_file, download_folder, exception)
+        elif not video_checkbox and audio_checkbox and video_container == "mp3":  # Exception for mp3 Format, so you can download for example music as a mp3 file
+            merge_task = "working"
+            send_status("task_list", [video_task, audio_task, merge_task])
+
+            send_status("console", ["Convert audio in mp3...", source])
+            logger.info(f"Audio file:{audio_file}")
+            output_file = os.path.join(download_folder, os.path.splitext(os.path.basename(audio_file))[
+                0] + "." + video_container)  # Absolute path to download folder
+            result = convert_audio_to_mp3(audio_file, output_file)
+            if result:
+                print("In result.")
+                merge_task = "done"
+                send_status("task_list", [video_task, audio_task, merge_task])
+                send_status("console", ["Converting successful.", source])
+                # move_video_file(output_file, download_folder, "")
+                shutil.remove(audio_file)
+            else:
+                send_status("console",
+                            ["Converting failed. Downloaded audio is still storaged in your download folder.", source])
+        elif not video_container == "mp3":  # Exception for non merged videostreams/audiostreams to move from tmp in chosen download folder
+            if not merge == "yes" and (video_checkbox and video_input) and (
+                    audio_checkbox and audio_input):  # No merge, but video and audio
+                logger.info("1")
+                move_video_file(video_file, download_folder, filename_addition)
+                move_audio_file(audio_file, download_folder, filename_addition, video_file)
+            elif (video_checkbox and video_input) and (
+                    audio_checkbox and not audio_input):  # Merge, but video and audio already merged
+                logger.info("2")
+                move_video_file(video_file, download_folder, filename_addition)
+            elif (video_checkbox and video_input) or (audio_checkbox and audio_input):  # Merge, but either video or audio
+                logger.info("3")
+                if video_checkbox:
+                    logger.info("3.1")
+                    move_video_file(video_file, download_folder, filename_addition)
+                elif audio_checkbox:
+                    logger.info("3.2")
+                    move_audio_file(audio_file, download_folder, filename_addition)
+        return "Success"
+    except Exception as e:
+        return f"Error in initiate_merge: {e}"

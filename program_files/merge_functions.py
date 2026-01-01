@@ -1,5 +1,7 @@
 import subprocess
 from program_files.outsourced_functions import send_status, read
+import program_files.safe_shutil as shutil
+import os
 
 def get_va_codecs(source, video_file, audio_file):
     # --- Audio codec check ---
@@ -124,3 +126,27 @@ def gpu_acceleration_cmd():
 ]
     video_option = "h264_nvenc"
     return decoder, video_option
+
+def move_video_file(video_file, download_folder, filename_addition):
+    file_name, video_container = os.path.splitext(os.path.basename(video_file))
+    output_file = os.path.join(download_folder, file_name + "_" + filename_addition + video_container)
+    folder = os.path.dirname(video_file)
+    new_name = os.path.join(folder, file_name + "_" + filename_addition + video_container)
+    shutil.rename(video_file, new_name)
+    shutil.move(new_name, output_file, True)
+
+def move_audio_file(audio_file, download_folder, filename_addition, video_file = ""):
+    if video_file:
+        file_name, audio_container = os.path.splitext(os.path.basename(audio_file))
+        output_file = os.path.join(download_folder, file_name + "_" + filename_addition + audio_container)
+        folder = os.path.dirname(audio_file)
+        new_name = os.path.join(folder, file_name + "_" + filename_addition + audio_container)
+        shutil.rename(video_file, new_name)
+        shutil.move(new_name, output_file, True)
+    else:
+        file_name, audio_container = os.path.splitext(os.path.basename(audio_file))
+        output_file = os.path.join(download_folder, file_name + audio_container)
+        folder = os.path.dirname(audio_file)
+        new_name = os.path.join(folder, file_name + audio_container)
+        shutil.rename(audio_file, new_name)
+        shutil.move(new_name, output_file, True)
