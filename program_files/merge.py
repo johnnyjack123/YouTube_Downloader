@@ -1,10 +1,9 @@
 import subprocess
 from program_files.outsourced_functions import send_status, read
 from program_files.logger import logger
-from program_files.merge_functions import get_frame_count_estimate, gpu_acceleration_cmd, get_va_codecs, choose_merging_option
+from program_files.merge_functions import get_frame_count_estimate, get_va_codecs, choose_merging_option, move_video_file, move_audio_file, get_gpu
 import os
 import program_files.safe_shutil as shutil
-from program_files.merge_functions import move_video_file, move_audio_file
 
 def merging_video_audio(video_file, audio_file, output_file, gpu_acceleration):
     source = "python"
@@ -22,7 +21,7 @@ def merging_video_audio(video_file, audio_file, output_file, gpu_acceleration):
     except (ValueError, TypeError):
         total_frames = 0  # oder ein Fallback, wenn du es gar nicht bestimmen kannst
     if gpu_acceleration:
-        decoder, video_option = gpu_acceleration_cmd()
+        decoder, video_option, platform = get_gpu()
         cmd = [
             "ffmpeg", "-y",
             *decoder,
