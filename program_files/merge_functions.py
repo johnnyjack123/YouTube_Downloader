@@ -124,7 +124,7 @@ def get_frame_count_estimate(video_file):
 
 def create_gpu_encode_command(name):
     logger.info(f"GPU Name: {name}")
-    if "Nvidia".lower() in name.lower():
+    if "Nvidia".lower() in name.lower(): #Tested
         logger.info("In NVIDIA if")
         platform = "Nvidia"
         video_option = "h264_nvenc"
@@ -132,7 +132,7 @@ def create_gpu_encode_command(name):
             "-hwaccel", "cuda",
             "-hwaccel_output_format", "cuda",
         ]
-    elif "AMD".lower() in name.lower():
+    elif "AMD".lower() in name.lower(): #Untested
         platform = "AMD"
         if download_merge_globals.operating_system == "win32":
             video_option = "h264_amf"
@@ -141,10 +141,14 @@ def create_gpu_encode_command(name):
             video_option = "h264_vaapi"
             decoder = ["-hwaccel", "vaapi", "-vaapi_device", "/dev/dri/renderD128", "-hwaccel_output_format",
                             "vaapi",]
-    elif "Intel".lower() in name.lower():
+    elif "Intel".lower() in name.lower(): #Untested
         platform = "Intel"
         video_option = "h264_qsv"
         decoder = ["-hwaccel", "qsv", "-qsv_device", "/dev/dri/renderD128", "-hwaccel_output_format", "qsv",]
+    elif name == "Apple": #Untested
+        video_option = "h264_videotoolbox"
+        platform = "Apple"
+        decoder = ""
     else:
         platform = False
         video_option = False

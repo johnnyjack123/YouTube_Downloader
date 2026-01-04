@@ -16,7 +16,7 @@ from program_files.outsourced_functions import (ensure_ffmpeg, convert_command_t
 from program_files.file_handling import save, read
 from program_files.yt_dlp_functions import start_get_name
 from program_files.sockets import cancel_button
-
+from program_files.logger import logger
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Directory of this file
@@ -234,7 +234,9 @@ def settings():
     gpu_acceleration = request.form.get("gpu_acceleration")
     if gpu_acceleration != userdata["gpu_acceleration"]:
         userdata["gpu_acceleration"] = gpu_acceleration
-        get_gpu()
+        result = get_gpu()
+        if not result:
+            logger.error("Some error encountered in GPU detecting process.")
     selected_gpu = request.form.get("gpu_list")
     if gpu_acceleration:
         gpu_names = [gpu for gpu in program_data["gpu"] if selected_gpu not in gpu]

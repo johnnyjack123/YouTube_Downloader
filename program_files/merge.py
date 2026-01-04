@@ -40,7 +40,7 @@ def merging_video_audio(video_file, audio_file, output_file, gpu_acceleration):
         program_data = file["program_data"]
         platform, new_video_option, decoder = create_gpu_encode_command(program_data["gpu"][0])
         logger.info(f"Decoder: {decoder}, new_video_option: {new_video_option}, platform: {platform}")
-        if decoder and video_option and platform:
+        if video_option and platform:
             logger.info(f"GPU found, platform: {platform}")
             cmd = [
                 "ffmpeg", "-y",

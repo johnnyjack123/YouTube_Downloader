@@ -233,61 +233,61 @@ def check_for_queue():
         data["program_data"] = program_data
         save("whole_file", data)
 
-
-
 def send_status(function_name, function_args): #Important for download and merge process
     cmd = json.dumps({"function": function_name, "args": function_args})
     print(cmd, flush=True)
     return
 
-def get_gpu():
+def validate_gpu_list(gpu_list):
     file = read("file")
     program_data = file["program_data"]
+
+    logger.info(f"name: {gpu_list}")
+    if len(gpu_list) == 0:
+        return False
+    elif program_data["gpu"] != []:
+        logger.info(f"GPU-Name: {program_data["gpu"][0]}")
+        if set(program_data["gpu"]) != set(gpu_list):
+            program_data["gpu"] = gpu_list
+            file["program_data"] = program_data
+            save("whole_file", file)
+            logger.warning(
+                "Radical GPU Hardware change detected. Please select your current GPU in settings page if you want to use GPU-acceleration.")
+            console(
+                "Radical GPU Hardware change detected. Please select your current GPU in settings page if you want to use GPU-acceleration.",
+                "python")
+            print(
+                "Radical GPU Hardware change detected. Please select your current GPU in settings page if you want to use GPU-acceleration.")
+        return True
+    else:
+        program_data["gpu"] = gpu_list
+        file["program_data"] = program_data
+        save("whole_file", file)
+        return True
+
+def get_gpu():
     if global_variables.operating_system == "win32":
         out = subprocess.check_output(
             ["wmic", "path", "Win32_VideoController", "get", "Name"],
             text=True, stderr=subprocess.STDOUT
         )
         # erste Zeile ist Header "Name"
-        name = [line.strip() for line in out.splitlines() if line.strip() and line.strip().lower() != "name"]
-        logger.info(f"name: {name}")
-        if len(name) == 0:
-            return False
-        elif program_data["gpu"] != []:
-            logger.info(f"GPU-Name: {program_data["gpu"][0]}")
-            if set(program_data["gpu"]) != set(name):
-                program_data["gpu"] = name
-                file["program_data"] = program_data
-                save("whole_file", file)
-                logger.warning("Radical GPU Hardware change detected. Please select your current GPU in settings page if you want to use GPU-acceleration.")
-                console("Radical GPU Hardware change detected. Please select your current GPU in settings page if you want to use GPU-acceleration.", "python")
-                print("Radical GPU Hardware change detected. Please select your current GPU in settings page if you want to use GPU-acceleration.")
-            return True
-        else:
-            program_data["gpu"] = name
-            file["program_data"] = program_data
-            save("whole_file", file)
-            #platform, video_option, decoder = get_platform(name)
+        gpu_list = [line.strip() for line in out.splitlines() if line.strip() and line.strip().lower() != "name"]
+        result = validate_gpu_list(gpu_list)
+        return result
     elif global_variables.operating_system == "linux":
         out = subprocess.check_output(["lspci"], text=True)
-        name = [l for l in out.splitlines() if ("VGA compatible controller" in l) or ("3D controller" in l)]
-        if len(name) == 0:
-            return False
-        elif program_data["gpu"] != []:
-            logger.info(f"GPU-Name: {program_data["gpu"]}")
-            return True
-        else:
-            program_data["gpu"] = name
-            file["program_data"] = program_data
-            save("whole_file", file)
+        gpu_list = [l for l in out.splitlines() if ("VGA compatible controller" in l) or ("3D controller" in l)]
+        result = validate_gpu_list(gpu_list)
+        return result
     elif global_variables.operating_system == "darwin":
-        platform = "Apple"
-        video_option = "h264_videotoolbox"
+        file = read("file")
+        program_data = file["program_data"]
+        if program_data == "":
+            program_data["gpu"] = ["Apple"]
+        return True
     else:
-        decoder = False
-        video_option = False
-        platform = False
-    #return decoder, video_option, platform
+        return False
 
 def prepare_program():
     get_os()
