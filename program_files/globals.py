@@ -23,7 +23,8 @@ userdata = {
     "open_browser": "yes",
     "auto_update": "yes",
     "download_previous_queue": "yes",
-    "force_h264": False
+    "force_h264": False,
+    "gpu_acceleration": False
 }
 
 program_data = {
@@ -31,7 +32,8 @@ program_data = {
     "yt_dlp_update_time": "2025-09-06T17:40:36.348409",
     "video_queue": [],
     "update_branch": "master",
-    "update_repo": "johnnyjack123/YouTube_Downloader"
+    "update_repo": "johnnyjack123/YouTube_Downloader",
+    "gpu": []
 }
 
 download_data = {

@@ -10,54 +10,20 @@ import program_files.globals as global_variables
 from program_files.sockets import progress, console, update_tasks, emit_queue, update_current_video, cancel_button
 from program_files.logger import logger
 import program_files.safe_shutil as shutil
-from program_files.safe_shutil import _check_path
+from program_files.update import check_for_update_launcher
+from program_files.yt_dlp_functions import update_yt_dlp
+from program_files.file_handling import save, read
 
 download_process = None
-
-def save(entry, video_data):
-    userdata_file = global_variables.userdata_file
-    with open(userdata_file, "r", encoding="utf-8") as file:
-        data = json.load(file)
-        if entry == "whole_file":
-            data = video_data
-        else:
-            data[entry] = video_data
-    with open(userdata_file, "w", encoding="utf-8") as file:
-        json.dump(data, file, ensure_ascii=False, indent=4)
-    return
-
-def read(entry):
-    userdata_file = global_variables.userdata_file
-    if entry == "file":
-        with open(userdata_file, "r", encoding="utf-8") as file:
-            data = json.load(file)
-            return data
-    elif entry:
-        with open(userdata_file, "r", encoding="utf-8") as file:
-            data = json.load(file)
-            video_data = data[entry]
-            return video_data
-
-def check_for_userdata():
-    print("Check for userdata.")
-    userdata_file = global_variables.userdata_file
-    entry = {
-        "userdata": global_variables.userdata,
-        "program_data": global_variables.program_data,
-        "download_data": global_variables.download_data
-    }
-    if not os.path.exists(userdata_file):
-        with open(userdata_file, "w", encoding="utf-8") as f:
-            json.dump(entry, f, indent=4, ensure_ascii=False)
-        print("Created userdata")
-    return
 
 def get_os():
     if global_variables.operating_system == "":
         operating_system = sys.platform
         global_variables.operating_system = operating_system
+        logger.info(f"Set operating system to: {operating_system}.")
         return
     else:
+        logger.info("Already os entry in global_variables.operating_systems")
         return
 
 def ensure_ffmpeg():
@@ -68,7 +34,6 @@ def ensure_ffmpeg():
         install = input("Do you wanna install ffmpeg now? Type [yes] or [no]. You also can manually download ffmpeg from the official ffmpeg website: https://ffmpeg.org/download.html . You are not able to use this tool without ffmpeg installed.")
         if install == "yes":
                 try:
-                    get_os()
                     if global_variables.operating_system == "win32":
                         subprocess.run(
                             ["winget", "install", "-e", "--id", "Gyan.FFmpeg"],
@@ -187,7 +152,7 @@ def manage_download():
             video_json = json.dumps(video_entry)
 
             download_process = subprocess.Popen(
-                [sys.executable, "-m", "program_files.download", video_json, "--project-dir", os.path.abspath(".")],
+                [sys.executable, "-m", "program_files.download", video_json, "--project-dir", os.path.abspath("."), "--operating_system", global_variables.operating_system],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,  # Fehler landen auch im stdout
                 text=True,
@@ -268,47 +233,57 @@ def check_for_queue():
         data["program_data"] = program_data
         save("whole_file", data)
 
-def create_folders():
-    if not os.path.exists("tmp"):
-        os.makedirs("tmp")
 
-    tmp_launcher_folder = os.path.join("tmp", "launcher")
-    if not os.path.exists(tmp_launcher_folder):
-        os.makedirs(tmp_launcher_folder)
-    else:
-        shutil.rmtree(tmp_launcher_folder)
-        os.makedirs(tmp_launcher_folder)
-
-    tmp_old_files = os.path.join("tmp", "old_files")
-    if not os.path.exists(tmp_old_files):
-        os.makedirs(tmp_old_files)
-    else:
-        shutil.rmtree(tmp_old_files)
-        os.makedirs(tmp_old_files)
-
-    tmp_old_files_launcher = os.path.join("tmp", "old_files", "launcher")
-    if not os.path.exists(tmp_old_files_launcher):
-        os.makedirs(tmp_old_files_launcher)
-    else:
-        shutil.rmtree(tmp_old_files_launcher)
-        os.makedirs(tmp_old_files_launcher)
-
-    tmp_old_files_main = os.path.join("tmp", "old_files", "main")
-    if not os.path.exists(tmp_old_files_main):
-        os.makedirs(tmp_old_files_main)
-    else:
-        shutil.rmtree(tmp_old_files_main)
-        os.makedirs(tmp_old_files_main)
-
-    va = os.path.join("tmp", "va")
-    if not os.path.exists(va):
-        os.makedirs(va)
-    else:
-        shutil.rmtree(va)
-        os.makedirs(va)
-    return
 
 def send_status(function_name, function_args): #Important for download and merge process
     cmd = json.dumps({"function": function_name, "args": function_args})
     print(cmd, flush=True)
+    return
+
+def get_gpu():
+    logger.info(f"OS: {global_variables.operating_system}")
+    file = read("file")
+    program_data = file["program_data"]
+    if global_variables.operating_system == "win32":
+        out = subprocess.check_output(
+            ["wmic", "path", "Win32_VideoController", "get", "Name"],
+            text=True, stderr=subprocess.STDOUT
+        )
+        # erste Zeile ist Header "Name"
+        name = [line.strip() for line in out.splitlines() if line.strip() and line.strip().lower() != "name"]
+        if len(name) == 0:
+            return False
+        elif program_data["gpu"] != []:
+            logger.info(f"GPU-Name: {program_data["gpu"]}")
+            return True
+        else:
+            program_data["gpu"] = name
+            file["program_data"] = program_data
+            save("whole_file", file)
+            #platform, video_option, decoder = get_platform(name)
+    elif global_variables.operating_system == "linux":
+        out = subprocess.check_output(["lspci"], text=True)
+        name = [l for l in out.splitlines() if ("VGA compatible controller" in l) or ("3D controller" in l)]
+        platform, video_option, decoder = get_platform(name)
+    elif global_variables.operating_system == "darwin":
+        platform = "Apple"
+        video_option = "h264_videotoolbox"
+    else:
+        decoder = False
+        video_option = False
+        platform = False
+    #return decoder, video_option, platform
+
+def prepare_program():
+    get_os()
+    check_for_update_launcher()
+    update_yt_dlp()
+    check_for_queue() #Checks, if there is still a queue from the previous download process saved in userdata.json
+    start_download() #Starts manage_download worker
+    data = read("file")
+    userdata = data["userdata"]
+    if userdata["open_browser"] == "yes":
+        open_browser()
+    if userdata["gpu_acceleration"]:
+        get_gpu()
     return

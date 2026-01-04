@@ -19,11 +19,12 @@ import program_files.globals as global_variables
 global_variables.project_dir = project_dir
 print(f"Project dir: {project_dir}")
 
-from program_files.outsourced_functions import read, check_for_userdata, create_folders
 from program_files.update import check_for_updates
 from program_files.logger import logger, log_message
 from program_files.logger import logger
 import program_files.safe_shutil as shutil
+from program_files.migrate_userdata_file import migrate_config
+from program_files.file_handling import read, check_for_userdata, create_folders
 
 def check_internet_connection(url="https://www.google.com", timeout=5):
     try:
@@ -165,8 +166,9 @@ def check_for_update_main():
 log_message("\n", raw=True)
 log_message(f"---------- Start program at {datetime.now()} ----------", raw=True)
 
-check_for_userdata()
-create_folders()
+check_for_userdata() # ensures that userdata file exists
+create_folders() # create necessary tmp-folders for update process
+migrate_config() # Update current userdata file, if json-filed was added to default userdata scheme in globals.py
 data = read("file")
 userdata = data["userdata"]
 if userdata["auto_update"] == "yes":

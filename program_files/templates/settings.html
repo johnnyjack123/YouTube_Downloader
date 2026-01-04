@@ -96,6 +96,27 @@
             </label>
         </div>
 
+        <!-- Enable GPU encoding -->
+        <div class="form-check mb-3">
+            {% if gpu_acceleration %}
+            <input type="checkbox" name="gpu_acceleration" value="yes"
+                   class="form-check-input" id="gpu_acceleration" checked>
+            {% else %}
+            <input type="checkbox" name="gpu_acceleration" value="yes"
+                   class="form-check-input" id="gpu_acceleration">
+            {% endif %}
+            <label for="gpu_acceleration" class="form-check-label">
+                Enable GPU-encoding for merging process. Always encode video and audio in h264 codec. Results in a way faster merging speed.
+            </label>
+        </div>
+
+        <label class="form-label"><strong>Choose GPU</strong></label>
+            <select name="gpu_list" class="form-select mb-3">
+                {% for gpu in gpu_list %}
+                <option value="{{ gpu }}">{{ gpu }}</option>
+                {% endfor %}
+            </select>
+
         <hr class="my-4">
 
         <input type="submit" class="btn btn-info w-100 btn-download" value="Save settings">

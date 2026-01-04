@@ -1,9 +1,11 @@
 import subprocess
-from program_files.outsourced_functions import send_status, read
+from program_files.outsourced_functions import send_status
+from program_files.file_handling import read
 import program_files.safe_shutil as shutil
 import os
-import program_files.globals as global_variables
+import program_files.download_merge_globals as download_merge_globals
 
+from program_files.logger import logger
 def get_va_codecs(source, video_file, audio_file):
     # --- Audio codec check ---
     result = subprocess.run([
@@ -120,24 +122,26 @@ def get_frame_count_estimate(video_file):
     # --- Wenn gar nichts geht ---
     return 0
 
-def get_platform(name):
-    if "Nvidia" in name:
+def create_gpu_encode_command(name):
+    logger.info(f"GPU Name: {name}")
+    if "Nvidia".lower() in name.lower():
+        logger.info("In NVIDIA if")
         platform = "Nvidia"
         video_option = "h264_nvenc"
         decoder = [
             "-hwaccel", "cuda",
             "-hwaccel_output_format", "cuda",
         ]
-    elif "AMD" in name:
+    elif "AMD".lower() in name.lower():
         platform = "AMD"
-        if global_variables.operating_system == "win32":
+        if download_merge_globals.operating_system == "win32":
             video_option = "h264_amf"
             decoder = ["-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11",]
         else:
             video_option = "h264_vaapi"
             decoder = ["-hwaccel", "vaapi", "-vaapi_device", "/dev/dri/renderD128", "-hwaccel_output_format",
                             "vaapi",]
-    elif "Intel" in name:
+    elif "Intel".lower() in name.lower():
         platform = "Intel"
         video_option = "h264_qsv"
         decoder = ["-hwaccel", "qsv", "-qsv_device", "/dev/dri/renderD128", "-hwaccel_output_format", "qsv",]
@@ -146,28 +150,6 @@ def get_platform(name):
         video_option = False
         decoder = False
     return platform, video_option, decoder
-
-def get_gpu():
-    if global_variables.operating_system == "win32":
-        out = subprocess.check_output(
-            ["wmic", "path", "Win32_VideoController", "get", "Name"],
-            text=True, stderr=subprocess.STDOUT
-        )
-        # erste Zeile ist Header "Name"
-        name = [line.strip() for line in out.splitlines() if line.strip() and line.strip().lower() != "name"]
-        platform, video_option, decoder = get_platform(name)
-    elif global_variables.operating_system == "linux":
-        out = subprocess.check_output(["lspci"], text=True)
-        name = [l for l in out.splitlines() if ("VGA compatible controller" in l) or ("3D controller" in l)]
-        platform, video_option, decoder = get_platform(name)
-    elif global_variables.operating_system == "darwin":
-        platform = "Apple"
-        video_option = "h264_videotoolbox"
-    else:
-        decoder = False
-        video_option = False
-        platform = False
-    return decoder, video_option, platform
 
 def move_video_file(video_file, download_folder, filename_addition):
     file_name, video_container = os.path.splitext(os.path.basename(video_file))

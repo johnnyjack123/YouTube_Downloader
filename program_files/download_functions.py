@@ -1,6 +1,6 @@
 from program_files.outsourced_functions import send_status
 import program_files.download_merge_globals as download_merge_globals
-import program_files.logger as logger
+from program_files.logger import logger
 
 def progress_hook(d):
     if d['status'] == 'downloading':

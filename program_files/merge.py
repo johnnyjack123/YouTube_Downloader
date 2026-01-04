@@ -1,9 +1,11 @@
 import subprocess
 from program_files.outsourced_functions import send_status, read
 from program_files.logger import logger
-from program_files.merge_functions import get_frame_count_estimate, get_va_codecs, choose_merging_option, move_video_file, move_audio_file, get_gpu
+from program_files.merge_functions import get_frame_count_estimate, get_va_codecs, choose_merging_option, \
+    move_video_file, move_audio_file, create_gpu_encode_command
 import os
 import program_files.safe_shutil as shutil
+from program_files.outsourced_functions import get_gpu
 
 def merging_video_audio(video_file, audio_file, output_file, gpu_acceleration):
     source = "python"
@@ -14,6 +16,18 @@ def merging_video_audio(video_file, audio_file, output_file, gpu_acceleration):
 
     video_option, audio_option = choose_merging_option(source, video_file, video_codec, audio_codec, output_file)
 
+    default_cmd = [
+        "ffmpeg", "-y",
+        "-i", video_file,
+        "-i", audio_file,
+        "-c:v", video_option,
+        "-c:a", audio_option,
+        "-movflags", "faststart",
+        "-progress", "pipe:1",  # FFmpeg writes progress to stdout
+        "-nostats",  # supress logs in console
+        output_file
+    ]
+
     total_frames = get_frame_count_estimate(video_file)
     logger.info(f"Total frames: {total_frames}")
     try:
@@ -21,31 +35,31 @@ def merging_video_audio(video_file, audio_file, output_file, gpu_acceleration):
     except (ValueError, TypeError):
         total_frames = 0  # oder ein Fallback, wenn du es gar nicht bestimmen kannst
     if gpu_acceleration:
-        decoder, video_option, platform = get_gpu()
-        cmd = [
-            "ffmpeg", "-y",
-            *decoder,
-            "-i", video_file,
-            "-i", audio_file,
-            "-c:v", video_option,
-            "-c:a", audio_option,
-            "-movflags", "faststart",
-            "-progress", "pipe:1",  # FFmpeg writes progress to stdout
-            "-nostats",  # supress logs in console
-            output_file
-        ]
+        logger.info("GPU-Acceleration enabled")
+        file = read("file")
+        program_data = file["program_data"]
+        platform, new_video_option, decoder = create_gpu_encode_command(program_data["gpu"][0])
+        #decoder, new_video_option, platform = get_gpu()
+        logger.info(f"Decoder: {decoder}, new_video_option: {new_video_option}, platform: {platform}")
+        if decoder and video_option and platform:
+            logger.info(f"GPU found, platform: {platform}")
+            cmd = [
+                "ffmpeg", "-y",
+                *decoder,
+                "-i", video_file,
+                "-i", audio_file,
+                "-c:v", new_video_option,
+                "-c:a", audio_option,
+                "-movflags", "faststart",
+                "-progress", "pipe:1",  # FFmpeg writes progress to stdout
+                "-nostats",  # supress logs in console
+                output_file
+            ]
+            logger.info(f"ffmpeg command: {cmd}")
+        else:
+            cmd = default_cmd
     else:
-        cmd = [
-            "ffmpeg", "-y",
-            "-i", video_file,
-            "-i", audio_file,
-            "-c:v", video_option,
-            "-c:a", audio_option,
-            "-movflags", "faststart",
-            "-progress", "pipe:1",  # FFmpeg writes progress to stdout
-            "-nostats",  # supress logs in console
-            output_file
-        ]
+        cmd = default_cmd
 
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True)
 
@@ -139,7 +153,9 @@ def initiate_merge(video_file, video_checkbox, video_input, video_container, aud
             logger.info("Merging video and audio stream.")
             output_file = os.path.join(download_folder, os.path.splitext(os.path.basename(video_file))[
                 0] + "_" + filename_addition + "." + video_container)  # Absolute path to download folder
-            result = merging_video_audio(video_file, audio_file, output_file)
+            file = read("file")
+            gpu_acceleration = file["userdata"]["gpu_acceleration"]
+            result = merging_video_audio(video_file, audio_file, output_file, gpu_acceleration)
             if result:
                 send_status("console", ["Merging successful.", source])
                 logger.info("Merging successful.")

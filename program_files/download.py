@@ -4,20 +4,26 @@ import subprocess
 import sys
 import json
 import argparse
-import program_files.globals as global_variables
+#import program_files.globals as global_variables
+import program_files.download_merge_globals as download_merge_globals
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--project-dir", default=None)
+parser.add_argument("--operating_system", default=None)
 args, _ = parser.parse_known_args()
-
-if args.project_dir:
-    global_variables.project_dir = args.project_dir
+project_dir = args.project_dir
+operating_system = args.operating_system
+if project_dir and operating_system:
+    download_merge_globals.project_dir = project_dir
+    download_merge_globals.operating_system = operating_system
 
 from program_files.logger import logger
-from program_files.outsourced_functions import send_status, read
+from program_files.outsourced_functions import send_status
+from program_files.file_handling import read
 from program_files.download_functions import progress_hook, Logger, create_download_commands
 from program_files.merge import initiate_merge
-import program_files.download_merge_globals as download_merge_globals
+
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Ordner, wo die aktuelle Datei liegt
 userdata_file = os.path.join(BASE_DIR, "..", "userdata.json")
 
