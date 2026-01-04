@@ -5,8 +5,7 @@ from program_files.merge_functions import get_frame_count_estimate, get_va_codec
     move_video_file, move_audio_file, create_gpu_encode_command
 import os
 import program_files.safe_shutil as shutil
-from program_files.outsourced_functions import get_gpu
-
+import time
 def merging_video_audio(video_file, audio_file, output_file, gpu_acceleration):
     source = "python"
     send_status("console", ["Initiating merging of video and audio stream...", source])
@@ -35,11 +34,10 @@ def merging_video_audio(video_file, audio_file, output_file, gpu_acceleration):
     except (ValueError, TypeError):
         total_frames = 0  # oder ein Fallback, wenn du es gar nicht bestimmen kannst
     if gpu_acceleration:
-        logger.info("GPU-Acceleration enabled")
+        logger.info("GPU-Acceleration enabled.")
         file = read("file")
         program_data = file["program_data"]
         platform, new_video_option, decoder = create_gpu_encode_command(program_data["gpu"][0])
-        #decoder, new_video_option, platform = get_gpu()
         logger.info(f"Decoder: {decoder}, new_video_option: {new_video_option}, platform: {platform}")
         if decoder and video_option and platform:
             logger.info(f"GPU found, platform: {platform}")
@@ -51,15 +49,18 @@ def merging_video_audio(video_file, audio_file, output_file, gpu_acceleration):
                 "-c:v", new_video_option,
                 "-c:a", audio_option,
                 "-movflags", "faststart",
-                "-progress", "pipe:1",  # FFmpeg writes progress to stdout
+                "-progress", "pipe:1",  # ffmpeg writes progress to stdout
                 "-nostats",  # supress logs in console
                 output_file
             ]
-            logger.info(f"ffmpeg command: {cmd}")
         else:
             cmd = default_cmd
     else:
+        logger.info("GPU-Acceleration disabled.")
         cmd = default_cmd
+    logger.info(f"ffmpeg command: {cmd}")
+
+    start_time = time.perf_counter()
 
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True)
 
@@ -80,6 +81,10 @@ def merging_video_audio(video_file, audio_file, output_file, gpu_acceleration):
                 send_status("console", [f"Error in line={line!r}, total_frames={total_frames}: {e}", source])
 
     process.wait()
+    end_time = time.perf_counter()
+    duration = end_time - start_time
+    logger.info(f"Merged for {duration:.2f} seconds.")
+    send_status("console", [f"Merged for {duration:.2f} seconds.", source])
     if process.returncode != 0:
         print("\nMerging failed!")
         send_status("console", ["Merging failed", "ffmpeg"])
