@@ -6,6 +6,7 @@ from program_files.merge_functions import get_frame_count_estimate, get_va_codec
 import os
 import program_files.safe_shutil as shutil
 import time
+
 def merging_video_audio(video_file, audio_file, output_file, gpu_acceleration):
     source = "python"
     send_status("console", ["Initiating merging of video and audio stream...", source])
