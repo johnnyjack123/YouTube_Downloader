@@ -234,11 +234,12 @@ def settings():
     gpu_acceleration = request.form.get("gpu_acceleration")
     if gpu_acceleration != userdata["gpu_acceleration"]:
         userdata["gpu_acceleration"] = gpu_acceleration
-        result = get_gpu()
+        result = get_gpu() #Detects all available GPUs
         if not result:
             logger.error("Some error encountered in GPU detecting process.")
     selected_gpu = request.form.get("gpu_list")
     if gpu_acceleration:
+        #Sort GPU list, so the choosen is always in the first place
         gpu_names = [gpu for gpu in program_data["gpu"] if selected_gpu not in gpu]
         gpu_names.insert(0, selected_gpu)
         program_data["gpu"] = gpu_names

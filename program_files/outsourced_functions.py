@@ -300,5 +300,7 @@ def prepare_program():
     if userdata["open_browser"] == "yes":
         open_browser()
     if userdata["gpu_acceleration"]:
-        get_gpu()
+        result = get_gpu()
+        if not result:
+            logger.error("Some error encountered in GPU detecting process.")
     return
