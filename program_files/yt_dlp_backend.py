@@ -197,7 +197,7 @@ def settings_page():
     auto_update = userdata["auto_update"]
     auto_merge = download_data["auto_merge"]
     download_previous_queue = userdata["download_previous_queue"]
-    force_h264 = userdata["force_h264"]
+    force_codec = userdata["force_codec"]
     gpu_acceleration = userdata["gpu_acceleration"]
     gpu_list = program_data["gpu"]
 
@@ -206,7 +206,7 @@ def settings_page():
                            auto_update=auto_update,
                            auto_merge=auto_merge,
                            download_previous_queue=download_previous_queue,
-                           force_h264=force_h264,
+                           force_h264=force_codec,
                            gpu_acceleration=gpu_acceleration,
                            gpu_list=gpu_list)
 
@@ -228,8 +228,8 @@ def settings():
     download_previous_queue = request.form.get("download_previous_queue")
     userdata["download_previous_queue"] = download_previous_queue
 
-    force_h264 = request.form.get("force_h264")
-    userdata["force_h264"] = force_h264
+    force_codec = request.form.get("force_codec")
+    userdata["force_codec"] = force_codec
 
     gpu_acceleration = request.form.get("gpu_acceleration")
     if gpu_acceleration != userdata["gpu_acceleration"]:
@@ -244,6 +244,9 @@ def settings():
         gpu_names = [gpu for gpu in program_data["gpu"] if selected_gpu not in gpu]
         gpu_names.insert(0, selected_gpu)
         program_data["gpu"] = gpu_names
+
+    codec_selection = request.form.get("codec_selection")
+    userdata["codec"] = codec_selection
 
     data["userdata"] = userdata
     data["download_data"] = download_data

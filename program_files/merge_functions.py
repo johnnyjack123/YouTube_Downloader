@@ -37,7 +37,7 @@ def choose_merging_option(source, video_file, video_codec, audio_codec, output_f
 
     file = read("file")
     userdata = file["userdata"]
-    if userdata["force_h264"]:
+    if userdata["force_codec"]:
         is_mp4_container = video_file.lower().endswith(".mp4")
 
         if is_mp4_container and video_codec.lower() == "h264":
@@ -45,7 +45,10 @@ def choose_merging_option(source, video_file, video_codec, audio_codec, output_f
             video_option = "copy"  # Nur stream kopieren
         else:
             send_status("console", [f"Re-encoding video to H.264 (was: {video_codec})", source])
-            video_option = "libx264"
+            if userdata["codec"] == "h264":
+                video_option = "libx264"
+            elif userdata["codec"] == "h265":
+                video_option = "libx265"
     else:
         video_option = "copy"
 

@@ -23,7 +23,8 @@ userdata = {
     "open_browser": "yes",
     "auto_update": "yes",
     "download_previous_queue": "yes",
-    "force_h264": False,
+    "force_codec": False,
+    "codec": "",
     "gpu_acceleration": False,
     "debug_mode": False
 }
