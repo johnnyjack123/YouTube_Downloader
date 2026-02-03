@@ -283,7 +283,11 @@ if __name__ == '__main__':
     result = ensure_ffmpeg()
     if result == "run":
         prepare_program()
-        socketio.run(app, host="0.0.0.0", port=5000, debug=False) #TODO: Debugmode als Option in userdata
+        file = read("file")
+        userdata = file["userdata"]
+        debug_mode = userdata["debug_mode"]
+        logger.info(f"Debug mode: {debug_mode}")
+        socketio.run(app, host="0.0.0.0", port=5000, debug=debug_mode)
     elif result == "restart":
         print("Please restart this python script and the whole command line.")
     else:

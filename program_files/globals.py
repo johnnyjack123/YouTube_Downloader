@@ -24,7 +24,8 @@ userdata = {
     "auto_update": "yes",
     "download_previous_queue": "yes",
     "force_h264": False,
-    "gpu_acceleration": False
+    "gpu_acceleration": False,
+    "debug_mode": False
 }
 
 program_data = {
