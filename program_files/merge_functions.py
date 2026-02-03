@@ -125,7 +125,6 @@ def get_frame_count_estimate(video_file):
 def create_gpu_encode_command(name):
     logger.info(f"GPU Name: {name}")
     if "Nvidia".lower() in name.lower(): #Tested
-        logger.info("In NVIDIA if")
         platform = "Nvidia"
         video_option = "h264_nvenc"
         decoder = [

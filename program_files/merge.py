@@ -39,7 +39,6 @@ def merging_video_audio(video_file, audio_file, output_file, gpu_acceleration):
         file = read("file")
         program_data = file["program_data"]
         platform, new_video_option, decoder = create_gpu_encode_command(program_data["gpu"][0])
-        logger.info(f"Decoder: {decoder}, new_video_option: {new_video_option}, platform: {platform}")
         if video_option and platform:
             logger.info(f"GPU found, platform: {platform}")
             cmd = [
@@ -59,7 +58,6 @@ def merging_video_audio(video_file, audio_file, output_file, gpu_acceleration):
     else:
         logger.info("GPU-Acceleration disabled.")
         cmd = default_cmd
-    logger.info(f"ffmpeg command: {cmd}")
 
     start_time = time.perf_counter()
 
@@ -200,20 +198,15 @@ def initiate_merge(video_file, video_checkbox, video_input, video_container, aud
         elif not video_container == "mp3":  # Exception for non merged videostreams/audiostreams to move from tmp in chosen download folder
             if not merge == "yes" and (video_checkbox and video_input) and (
                     audio_checkbox and audio_input):  # No merge, but video and audio
-                logger.info("1")
                 move_video_file(video_file, download_folder, filename_addition)
                 move_audio_file(audio_file, download_folder, filename_addition, video_file)
             elif (video_checkbox and video_input) and (
                     audio_checkbox and not audio_input):  # Merge, but video and audio already merged
-                logger.info("2")
                 move_video_file(video_file, download_folder, filename_addition)
             elif (video_checkbox and video_input) or (audio_checkbox and audio_input):  # Merge, but either video or audio
-                logger.info("3")
                 if video_checkbox:
-                    logger.info("3.1")
                     move_video_file(video_file, download_folder, filename_addition)
                 elif audio_checkbox:
-                    logger.info("3.2")
                     move_audio_file(audio_file, download_folder, filename_addition)
         return "Success"
     except Exception as e:

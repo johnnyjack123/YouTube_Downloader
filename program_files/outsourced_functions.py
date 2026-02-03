@@ -287,7 +287,7 @@ def get_gpu():
             program_data["gpu"] = ["Apple"]
         return True
     else:
-        return False
+        return False #TODO: machen, dass erkannt wird, wenn Platform nicht erkannt wird bzw. wenn graphikkarte nicht gefunden wird, dass dann einfach cpu weiter genutzt wird
 
 def prepare_program():
     get_os()
