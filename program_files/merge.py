@@ -38,22 +38,27 @@ def merging_video_audio(video_file, audio_file, output_file, gpu_acceleration):
         logger.info("GPU-Acceleration enabled.")
         file = read("file")
         program_data = file["program_data"]
-        platform, new_video_option, decoder = create_gpu_encode_command(program_data["gpu"][0])
-        if video_option and platform:
-            logger.info(f"GPU found, platform: {platform}")
-            cmd = [
-                "ffmpeg", "-y",
-                *decoder,
-                "-i", video_file,
-                "-i", audio_file,
-                "-c:v", new_video_option,
-                "-c:a", audio_option,
-                "-movflags", "faststart",
-                "-progress", "pipe:1",  # ffmpeg writes progress to stdout
-                "-nostats",  # supress logs in console
-                output_file
-            ]
+        gpu = program_data["gpu"][0]
+        if gpu:
+            platform, new_video_option, decoder = create_gpu_encode_command(program_data["gpu"][0])
+            if video_option and platform:
+                logger.info(f"GPU found, platform: {platform}")
+                cmd = [
+                    "ffmpeg", "-y",
+                    *decoder,
+                    "-i", video_file,
+                    "-i", audio_file,
+                    "-c:v", new_video_option,
+                    "-c:a", audio_option,
+                    "-movflags", "faststart",
+                    "-progress", "pipe:1",  # ffmpeg writes progress to stdout
+                    "-nostats",  # supress logs in console
+                    output_file
+                ]
+            else:
+                cmd = default_cmd
         else:
+            logger.warning("Due to some error there is no gpu listed. Check the previous logs on errors. Fallback to CPU.")
             cmd = default_cmd
     else:
         logger.info("GPU-Acceleration disabled.")

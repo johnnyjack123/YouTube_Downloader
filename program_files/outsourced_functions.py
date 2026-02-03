@@ -238,13 +238,14 @@ def send_status(function_name, function_args): #Important for download and merge
     print(cmd, flush=True)
     return
 
+# Checks, if gpu list is empty or if a gpu got added/subtracted from the system
 def validate_gpu_list(gpu_list):
     file = read("file")
     program_data = file["program_data"]
 
     logger.info(f"name: {gpu_list}")
     if len(gpu_list) == 0:
-        return False
+        return {"status": False, "message": "No gpu found."}
     elif program_data["gpu"] != []:
         logger.info(f"GPU-Name: {program_data["gpu"][0]}")
         if set(program_data["gpu"]) != set(gpu_list):
@@ -258,14 +259,16 @@ def validate_gpu_list(gpu_list):
                 "python")
             print(
                 "Radical GPU Hardware change detected. Please select your current GPU in settings page if you want to use GPU-acceleration.")
-        return True
+        return {"status": True, "message": ""}
     else:
         program_data["gpu"] = gpu_list
         file["program_data"] = program_data
         save("whole_file", file)
-        return True
+        return {"status": True, "message": ""}
 
+# Checks dependend on OS which GPUs are available
 def get_gpu():
+    status = {"status": False, "message": ""}
     if global_variables.operating_system == "win32":
         out = subprocess.check_output(
             ["wmic", "path", "Win32_VideoController", "get", "Name"],
@@ -274,21 +277,27 @@ def get_gpu():
         # erste Zeile ist Header "Name"
         gpu_list = [line.strip() for line in out.splitlines() if line.strip() and line.strip().lower() != "name"]
         result = validate_gpu_list(gpu_list)
-        return result
+        status["status"] = result["status"]
+        status["message"] = result["message"]
     elif global_variables.operating_system == "linux":
         out = subprocess.check_output(["lspci"], text=True)
         gpu_list = [l for l in out.splitlines() if ("VGA compatible controller" in l) or ("3D controller" in l)]
         result = validate_gpu_list(gpu_list)
-        return result
+        status["status"] = result["status"]
+        status["message"] = result["message"]
     elif global_variables.operating_system == "darwin":
         file = read("file")
         program_data = file["program_data"]
         if program_data == "":
             program_data["gpu"] = ["Apple"]
-        return True
+        status["status"] = True
+        status["message"] = ""
     else:
-        return False #TODO: machen, dass erkannt wird, wenn Platform nicht erkannt wird bzw. wenn graphikkarte nicht gefunden wird, dass dann einfach cpu weiter genutzt wird
+        status["status"] = False
+        status["message"] = "OS not found."
+    return status
 
+# Prepares program by setting important global variables such as OS or starting the download worker
 def prepare_program():
     get_os()
     check_for_update_launcher()
@@ -297,10 +306,14 @@ def prepare_program():
     start_download() #Starts manage_download worker
     data = read("file")
     userdata = data["userdata"]
+    program_data = data["program_data"]
     if userdata["open_browser"] == "yes":
         open_browser()
     if userdata["gpu_acceleration"]:
         result = get_gpu()
-        if not result:
-            logger.error("Some error encountered in GPU detecting process.")
+        if not result["status"]:
+            logger.error(f"Some error encountered in GPU detecting process: {result["message"]}")
+            program_data["gpu"] = [False] # Ensures fallback to CPU
+            data["program_data"] = program_data
+            save("whole_file", data)
     return

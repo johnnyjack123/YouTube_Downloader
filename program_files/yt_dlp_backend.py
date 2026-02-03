@@ -234,12 +234,13 @@ def settings():
     gpu_acceleration = request.form.get("gpu_acceleration")
     if gpu_acceleration != userdata["gpu_acceleration"]:
         userdata["gpu_acceleration"] = gpu_acceleration
-        result = get_gpu() #Detects all available GPUs
-        if not result:
-            logger.error("Some error encountered in GPU detecting process.")
+
     selected_gpu = request.form.get("gpu_list")
-    if gpu_acceleration:
-        #Sort GPU list, so the choosen is always in the first place
+    if gpu_acceleration and program_data["gpu"][0]!= False:
+        result = get_gpu() #Detects all available GPUs
+        if not result["status"]:
+            logger.error(f"Some error encountered in GPU detecting process: {result["message"]}")
+        # Sort GPU list, so the choosen is always in the first place
         gpu_names = [gpu for gpu in program_data["gpu"] if selected_gpu not in gpu]
         gpu_names.insert(0, selected_gpu)
         program_data["gpu"] = gpu_names
@@ -282,7 +283,7 @@ if __name__ == '__main__':
     result = ensure_ffmpeg()
     if result == "run":
         prepare_program()
-        socketio.run(app, host="0.0.0.0", port=5000, debug=False)
+        socketio.run(app, host="0.0.0.0", port=5000, debug=False) #TODO: Debugmode als Option in userdata
     elif result == "restart":
         print("Please restart this python script and the whole command line.")
     else:
