@@ -1,12 +1,18 @@
 from pathlib import Path
 import shutil
 import program_files.globals as global_variables
+import program_files.download_merge_globals as download_merge_globals
 from program_files.logger import logger
 import os
 
-project_dir = Path(global_variables.project_dir).resolve()
-if not getattr(global_variables, "project_dir", None):
+if not getattr(global_variables, "project_dir", None) and not getattr(download_merge_globals, "project_dir", None):
     raise RuntimeError("Project directory not set in global_variables.project_dir")
+
+# If statement, because the merge subprocess has the project dir stored in another globals.py file
+if global_variables.project_dir:
+    project_dir = Path(global_variables.project_dir).resolve()
+elif download_merge_globals.project_dir:
+    project_dir = Path(download_merge_globals.project_dir).resolve()
 
 def _check_path(path):
     path = Path(path).resolve()

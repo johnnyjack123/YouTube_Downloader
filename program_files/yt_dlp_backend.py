@@ -11,14 +11,12 @@ args, _ = parser.parse_known_args()
 if args.project_dir:
     global_variables.project_dir = args.project_dir
 
-from program_files.outsourced_functions import (save, read,
-                                                check_for_userdata, ensure_ffmpeg, open_browser, convert_command_to_text,
-                                                convert_text_to_command, search_download_folder, start_download, abort_download,
-                                                check_for_queue, get_os)
-from program_files.update import check_for_update_launcher
-from program_files.yt_dlp_functions import update_yt_dlp, start_get_name
+from program_files.outsourced_functions import (ensure_ffmpeg, convert_command_to_text, get_gpu,
+                                                convert_text_to_command, search_download_folder, abort_download, prepare_program)
+from program_files.file_handling import save, read
+from program_files.yt_dlp_functions import start_get_name
 from program_files.sockets import cancel_button
-
+from program_files.logger import logger
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Directory of this file
@@ -194,26 +192,30 @@ def settings_page():
     data = read("file")
     userdata = data["userdata"]
     download_data = data["download_data"]
-
+    program_data = data["program_data"]
     open_browser_window = userdata["open_browser"]
     auto_update = userdata["auto_update"]
     auto_merge = download_data["auto_merge"]
     download_previous_queue = userdata["download_previous_queue"]
     force_h264 = userdata["force_h264"]
+    gpu_acceleration = userdata["gpu_acceleration"]
+    gpu_list = program_data["gpu"]
 
     return render_template('settings.html',
                            open_browser_window=open_browser_window,
                            auto_update=auto_update,
                            auto_merge=auto_merge,
                            download_previous_queue=download_previous_queue,
-                           force_h264=force_h264)
+                           force_h264=force_h264,
+                           gpu_acceleration=gpu_acceleration,
+                           gpu_list=gpu_list)
 
 @app.route('/settings', methods=["POST"])
 def settings():
     data = read("file")
     userdata = data["userdata"]
     download_data = data["download_data"]
-
+    program_data = data["program_data"]
     open_browser_window = request.form.get("open_browser_window")
     userdata["open_browser"] = open_browser_window
 
@@ -229,8 +231,23 @@ def settings():
     force_h264 = request.form.get("force_h264")
     userdata["force_h264"] = force_h264
 
+    gpu_acceleration = request.form.get("gpu_acceleration")
+    if gpu_acceleration != userdata["gpu_acceleration"]:
+        userdata["gpu_acceleration"] = gpu_acceleration
+
+    selected_gpu = request.form.get("gpu_list")
+    if gpu_acceleration and program_data["gpu"][0]!= False:
+        result = get_gpu() #Detects all available GPUs
+        if not result["status"]:
+            logger.error(f"Some error encountered in GPU detecting process: {result["message"]}")
+        # Sort GPU list, so the choosen is always in the first place
+        gpu_names = [gpu for gpu in program_data["gpu"] if selected_gpu not in gpu]
+        gpu_names.insert(0, selected_gpu)
+        program_data["gpu"] = gpu_names
+
     data["userdata"] = userdata
     data["download_data"] = download_data
+    data["program_data"] = program_data
 
     save("whole_file", data)
     return redirect(url_for("settings_page"))
@@ -263,20 +280,14 @@ def cancel_download():
     return redirect(url_for("home"))
 
 if __name__ == '__main__':
-    get_os()
-    check_for_update_launcher()
     result = ensure_ffmpeg()
     if result == "run":
-        check_for_userdata()
-        data = read("file")
-        userdata = data["userdata"]
-        if userdata["open_browser"] == "yes":
-            open_browser()
-        update_yt_dlp()
-        check_for_queue()
-        start_download()
-        socketio.run(app, host="0.0.0.0", port=5000, debug=False)
-
+        prepare_program()
+        file = read("file")
+        userdata = file["userdata"]
+        debug_mode = userdata["debug_mode"]
+        logger.info(f"Debug mode: {debug_mode}")
+        socketio.run(app, host="0.0.0.0", port=5000, debug=debug_mode)
     elif result == "restart":
         print("Please restart this python script and the whole command line.")
     else:
